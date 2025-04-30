@@ -1,0 +1,11 @@
+test
+node_modules
+.turbo
+.gitignore
+_avast_
+.git
+.next
+dist
+*.md
+out
+modules/prisma/generate/*

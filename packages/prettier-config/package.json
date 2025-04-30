@@ -1,0 +1,37 @@
+{
+  "name": "@lukasbriza/prettier-config",
+  "version": "0.0.0",
+  "description": "Prettier configuration for projects.",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist tsconfig.build.tsbuildinfo",
+    "build": "tsc --build tsconfig.build.json",
+    "cleanup": "rimraf .eslintcache .turbo tsconfig.tsbuildinfo tsconfig.build.tsbuildinfo dist node_modules",
+    "fix": "run-p format:fix lint:fix",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix"
+  },
+  "dependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "prettier-plugin-packagejson": "^2.5.0"
+  },
+  "devDependencies": {
+    "prettier": "3.3.2",
+    "typescript": "5.5.3"
+  },
+  "peerDependencies": {
+    "prettier": "3.3.2"
+  }
+}

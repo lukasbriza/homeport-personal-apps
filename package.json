@@ -1,0 +1,49 @@
+{
+  "name": "@lukasbriza/monorepo-template",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Universal monorepo template for application from @lukasbriza",
+  "author": "https://github.com/lukasbriza",
+  "type": "module",
+  "workspaces": [
+    "./apps/*",
+    "./packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "cleanup": "turbo run cleanup --no-daemon && pnpm run postcleanup",
+    "postcleanup": "rimraf .eslintcache tsconfig.tsbuildinfo node_modules",
+    "cli": "turbo build --filter @lukasbriza/cli & node ./packages/cli/dist/cli.js",
+    "dev": "turbo dev",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "lint": "turbo run lint --no-daemon",
+    "lint:fix": "turbo run lint:fix --no-daemon",
+    "prepare": "node scripts/husky-prepare.js",
+    "prepare:husky": "husky",
+    "ts": "turbo run ts --no-daemon"
+  },
+  "dependencies": {
+    "@commitlint/cli": "19.3.0",
+    "@commitlint/config-conventional": "19.2.2",
+    "@eslint/js": "9.6.0",
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/prettier-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@nestjs/cli": "10.4.2",
+    "@types/node": "20.14.9",
+    "cpy-cli": "5.0.0",
+    "eslint": "8.57.0",
+    "globals": "15.8.0",
+    "husky": "9.0.11",
+    "lint-staged": "15.2.7",
+    "prettier": "3.3.2",
+    "rimraf": "5.0.7",
+    "turbo": "2.0.6",
+    "typescript": "5.5.3",
+    "typescript-eslint": "7.15.0"
+  },
+  "packageManager": "pnpm@9.4.0",
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "@lukasbriza/cli",
+  "version": "0.0.0",
+  "description": "CLI for apps/package creation",
+  "type": "module",
+  "main": "./dist/cli.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist tsconfig.build.tsbuildinfo",
+    "build": "tsc --build tsconfig.build.json",
+    "cleanup": "rimraf .eslintcache .turbo tsconfig.tsbuildinfo tsconfig.build.tsbuildinfo dist node_modules",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix",
+    "run": "node ./dist/cli.js",
+    "ts": "tsc --build tsconfig.json"
+  },
+  "dependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@types/node": "20.14.9",
+    "ora": "8.0.1",
+    "readline-sync": "1.4.10",
+    "terminate": "2.8.0"
+  },
+  "devDependencies": {
+    "@types/readline-sync": "1.4.8"
+  }
+}

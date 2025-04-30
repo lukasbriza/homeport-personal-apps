@@ -1,0 +1,6 @@
+/.idea
+/.vscode
+/node_modules
+/pnpm-workspace.yaml
+/pnpm-lock.yaml
+.DS_Store

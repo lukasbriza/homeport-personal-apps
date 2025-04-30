@@ -1,0 +1,15 @@
+{
+  "extends": "@lukasbriza/ts-config",
+  "compilerOptions": {
+    "checkJs": true
+  },
+  "include": ["./*.ts"],
+  "exclude": [
+    "node_modules",
+    ".eslintrc.cjs",
+    "commitlint.config.js",
+    "lint-staged.config.js",
+    "prettier.config.js",
+    "scripts"
+  ]
+}

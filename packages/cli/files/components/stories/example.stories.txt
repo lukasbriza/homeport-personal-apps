@@ -1,0 +1,15 @@
+import type { Meta, StoryObj } from '@storybook/react'
+
+import { Avatar } from '../../src/index.js'
+
+const meta = {
+  component: Avatar,
+  title: 'Avatar',
+  parameters: { backgrounds: { default: 'dark' } },
+} satisfies Meta<typeof Avatar>
+
+type Story = StoryObj<typeof Avatar>
+
+export const Primary: Story = {}
+
+export default meta

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**/*", "tsconfig.tsbuildinfo", "tsconfig.build.tsbuildinfo"]
+    },
+    "lint": {
+      "dependsOn": ["^build"],
+      "outputs": [".eslintcache"]
+    },
+    "lint:fix": {
+      "dependsOn": ["^build"],
+      "outputs": [".eslintchache"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "ts": {
+      "dependsOn": ["^build"],
+      "outputs": ["tsconfig.tsbuildinfo"]
+    },
+    "cleanup": {
+      "cache": false
+    },
+    "run": {
+      "dependsOn": ["^build"],
+      "cache": false
+    }
+  }
+}

@@ -1,0 +1,10 @@
+FROM bitnami/mongodb:latest
+
+# Optional can rewrite in compose file
+ENV MONGODB_REPLICA_SET_MODE=primary
+ENV MONGODB_ADVERTISED_HOSTNAME=rs0
+ENV MONGODB_ROOT_USER=admin
+ENV MONGODB_ROOT_PASSWORD=password
+ENV MONGODB_REPLICA_SET_KEY=mongodbkey
+
+EXPOSE 27017

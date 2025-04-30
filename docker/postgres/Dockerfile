@@ -1,0 +1,7 @@
+FROM postgres:17.4-alpine3.21
+
+ENV POSTGRES_PASSWORD=password
+ENV POSTGRES_USER=admin
+ENV POSTGRES_DB=coincrusade
+
+EXPOSE 5432

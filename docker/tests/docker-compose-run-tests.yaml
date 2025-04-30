@@ -1,0 +1,15 @@
+services:
+  test-runner:
+    build:
+      context: ../../
+      dockerfile: docker/tests/Dockerfile
+      args:
+        - NODE_VERSION=22.11.0
+    container_name: coin-crusade-game_test-runner
+
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+

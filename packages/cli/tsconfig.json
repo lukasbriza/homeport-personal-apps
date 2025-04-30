@@ -1,0 +1,10 @@
+{
+  "extends": "@lukasbriza/ts-config/app",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "strict": true,
+  },
+  "include": [".eslintrc.cjs", "./*.js", "./src"],
+  "exclude": ["dist", "node_modules", "./files"],
+  "references": []
+}

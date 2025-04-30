@@ -1,0 +1,35 @@
+{
+  "name": "@lukasbriza/ts-config",
+  "version": "0.0.0",
+  "description": "Typescript configuration for projects.",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": "./base.json",
+    "./app": "./app.json",
+    "./nextjs": "./nextjs.json",
+    "./library": "./library.json",
+    "./nestjs": "./nestjs.json"
+  },
+  "main": "base.json",
+  "files": [
+    "app.json",
+    "base.json",
+    "library.json",
+    "cjs-library.json",
+    "nextjs.json",
+    "nestjs.json"
+  ],
+  "scripts": {
+    "cleanup": "rimraf .eslintcache .turbo node_modules",
+    "fix": "run-p format:fix lint:fix",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix"
+  },
+  "devDependencies": {
+    "typescript": "5.5.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.5.3"
+  }
+}

@@ -1,0 +1,20 @@
+import { Controls, Description, Meta, Primary, Source, Stories, Title } from '@storybook/blocks'
+
+import * as stories from './example.stories'
+
+<Meta of={stories} />
+
+<Title of={stories} />
+<Description of={stories} />
+
+### Usage
+
+<Source language="ts" code="import { Example } from '@lukasbriza/components'" />
+
+<Primary of={stories} />
+
+#### Props
+
+<Controls of={stories.Primary} />
+
+<Stories of={stories} includePrimary={false} />

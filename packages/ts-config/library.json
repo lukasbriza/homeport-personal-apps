@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "composite": true,
+    "declaration": true,
+    "removeComments": false,
+    "sourceMap": true,
+    "moduleResolution": "bundler",
+    "module": "preserve"
+  }
+}

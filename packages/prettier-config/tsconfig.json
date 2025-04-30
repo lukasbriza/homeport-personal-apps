@@ -1,0 +1,6 @@
+{
+  "extends": "@lukasbriza/ts-config/library",
+  "include": [".eslintrc.cjs", "./*.js", "src/**/*"],
+  "exclude": ["dist", "node_modules"],
+  "references": []
+}
