@@ -17,10 +17,11 @@ services:
     container_name: actual_app-prod
     environment:
       - NODE_ENV=${NODE_ENV}
+      - DATABASE_PORT=${DATABASE_PORT}
     ports:
-      - ${DATABASE_PORT}:5006'
+      - ${DATABASE_PORT}:5006
     volumes:
-      - - ${DATABASE_PATH}:/data
+      - ${DATABASE_PATH}:/data
     restart: unless-stopped
     networks:
       - app-prod

@@ -38,7 +38,7 @@ pipeline {
   environment {
     API_PROCESSOR_API = "http://api-processor:3002"
     GITHUB_URL = "github.com/lukasbriza/homeport-actual-budget-manager"
-    PROJECT_DIR = "actual-budget-manager"
+    PROJECT_DIR = "homeport-actual-budget-manager"
     PASSBOLT_FOLDER_PROD_ID = "819ce909-bb99-494c-bb40-4a935fa7592f"
     PASSBOLT_SHARED_FOLDER_ID = "61ac7071-e34d-4d18-9651-6fd084c195f3"
     ROOT_VOLUME_FILE = "/build"
@@ -61,26 +61,28 @@ pipeline {
       }
     }
     stage("Fetching secrets") {
-      script {
-        println("Fetching secrets...")
-        env.SHARED_SECRETS = passboltApi.getFolderSecrets(env.API_PROCESSOR_API, env.PASSBOLT_SHARED_FOLDER_ID)
-        env.SECRETS = passboltApi.getFolderSecrets(API_PROCESSOR_API, env.PASSBOLT_FOLDER_PROD_ID)
+      steps {
+        script {
+          println("Fetching secrets...")
+          env.SHARED_SECRETS = passboltApi.getFolderSecrets(env.API_PROCESSOR_API, env.PASSBOLT_SHARED_FOLDER_ID)
+          env.SECRETS = passboltApi.getFolderSecrets(API_PROCESSOR_API, env.PASSBOLT_FOLDER_PROD_ID)
 
-        println("Parsing secrets...")
-        def secrets = new groovy.json.JsonSlurper().parseText(env.SECRETS)
-        def sharedSecrets = new groovy.json.JsonSlurper().parseText(env.SHARED_SECRETS)
+          println("Parsing secrets...")
+          def secrets = new groovy.json.JsonSlurper().parseText(env.SECRETS)
+          def sharedSecrets = new groovy.json.JsonSlurper().parseText(env.SHARED_SECRETS)
 
-        println("Assigning secrets...")
-        env.NODE_ENV = secrets["NODE_ENV"]
-        env.DATABASE_PORT = secrets["DATABASE_PORT"]
-        env.DATABASE_PATH = secrets["DATABASE_PATH"]
-        env.POINTAINER_TARGET_ENVIRONMENT = sharedSecrets["POINTAINER_TARGET_ENVIRONMENT"]
-        env.SEND_EMAIL_ADDRESS = sharedSecrets["SEND_EMAIL_ADDRESS"]
-        env.MAIL_RECIPIENT = sharedSecrets["MAIL_RECIPIENT"]
-        env.GITHUB_PAT = sharedSecrets["GITHUB_PAT"]
-        env.PORTAINER_API_KEY = sharedSecrets["PORTAINER_API_KEY"]
-        env.DOCKER_NAME = sharedSecrets["DOCKER_NAME"]
-        env.DOCKER_PASSWORD = sharedSecrets["DOCKER_PASSWORD"]
+          println("Assigning secrets...")
+          env.DATABASE_PORT = secrets["DATABASE_PORT"]
+          env.DATABASE_PATH = secrets["DATABASE_PATH"]
+          env.NODE_ENV = sharedSecrets["NODE_ENV"]
+          env.POINTAINER_TARGET_ENVIRONMENT = sharedSecrets["POINTAINER_TARGET_ENVIRONMENT"]
+          env.SEND_EMAIL_ADDRESS = sharedSecrets["SEND_EMAIL_ADDRESS"]
+          env.MAIL_RECIPIENT = sharedSecrets["MAIL_RECIPIENT"]
+          env.GITHUB_PAT = sharedSecrets["GITHUB_PAT"]
+          env.PORTAINER_API_KEY = sharedSecrets["PORTAINER_API_KEY"]
+          env.DOCKER_NAME = sharedSecrets["DOCKER_NAME"]
+          env.DOCKER_PASSWORD = sharedSecrets["DOCKER_PASSWORD"]
+        }
       }
     }
     stage("Clone branch") {
@@ -141,9 +143,9 @@ pipeline {
           def ticker = getTicker()
 
           def envBody = [
-            ["name": "NODE_ENV", "value": "${env.NEXT_PUBLIC_GITHUB}"],
-            ["name": "DATABASE_PORT", "value": "${env.NEXT_PUBLIC_MAIL}"],
-            ["name": "DATABASE_PATH", "value": "${env.API_KEY}"],
+            ["name": "NODE_ENV", "value": "${env.NODE_ENV}"],
+            ["name": "DATABASE_PORT", "value": "${env.DATABASE_PORT}"],
+            ["name": "DATABASE_PATH", "value": "${env.DATABASE_PATH}"],
           ]
 
           if (stacksToRedeploy.size() == 0) {
@@ -152,7 +154,7 @@ pipeline {
 
             def deployRequestBody = [
               "endpointId": "${targetEnvironment.Id}",
-              "name": "coincrusade-runner-game${ticker}",
+              "name": "actual-budget-manager${ticker}",
               "repositoryURL": "https://${env.GITHUB_URL}",
               "repositoryAuthentication": true,
               "repositoryUsername": "lukasbriza",
