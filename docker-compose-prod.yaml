@@ -1,0 +1,31 @@
+# NEED TO DEFINE THESE VARIABLES IN .ENV #
+#########################################
+# - NODE_ENV
+# - DATABASE_PORT
+# - DATABASE_PATH
+
+networks:
+  app-prod:
+    driver: bridge
+
+services:
+  actual:
+    build:
+      context: .
+      dockerfile: apps/actual/Dockerfile
+    image: lbriza/actual:app-prod
+    container_name: actual_app-prod
+    environment:
+      - NODE_ENV=${NODE_ENV}
+    ports:
+      - ${DATABASE_PORT}:5006'
+    volumes:
+      - - ${DATABASE_PATH}:/data
+    restart: unless-stopped
+    networks:
+      - app-prod
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'

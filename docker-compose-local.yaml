@@ -1,0 +1,16 @@
+networks:
+  app-local:
+    driver: bridge
+
+services:
+  actual:
+    build:
+      context: .
+      dockerfile: apps/actual/Dockerfile
+    image: lbriza/actual:app-local
+    container_name: actual_app-local
+    ports:
+      - '5006:5006'
+    volumes:
+      - ./apps/actual/local_data:/data
+    restart: unless-stopped
