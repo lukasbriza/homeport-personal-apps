@@ -1,10 +1,11 @@
-FROM bitnami/mongodb:latest
+ARG TAG=latest
+FROM bitnami/mongodb:${TAG}
 
-# Optional can rewrite in compose file
-ENV MONGODB_REPLICA_SET_MODE=primary
-ENV MONGODB_ADVERTISED_HOSTNAME=rs0
-ENV MONGODB_ROOT_USER=admin
-ENV MONGODB_ROOT_PASSWORD=password
-ENV MONGODB_REPLICA_SET_KEY=mongodbkey
+# Should be defined by enviroment:
+  # MONGODB_REPLICA_SET_MODE=primary
+  # MONGODB_ADVERTISED_HOSTNAME=rs0
+  # MONGODB_ROOT_USER=admin
+  # MONGODB_ROOT_PASSWORD=password
+  # MONGODB_REPLICA_SET_KEY=mongodbkey
 
 EXPOSE 27017

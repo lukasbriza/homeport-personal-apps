@@ -1,16 +1,31 @@
+# VARIABLES DEFINED IN .ENV.LOCAL FILES #
+#########################################
+# - apps/actual
+#
+# To work with .env.local files you need to run `docker:build-local` or `docker:run-local`.
+
 networks:
-  app-local:
-    driver: bridge
+  actual-local:
+
+name: homeport-actual-budget-manager-local
 
 services:
+  #########################################
+  # ACTUAL service
   actual:
     build:
       context: .
       dockerfile: apps/actual/Dockerfile
-    image: lbriza/actual:app-local
-    container_name: actual_app-local
+    container_name: actual-budget-manager-local
     ports:
-      - '5006:5006'
+      - '${ACTUAL_PORT}:5006'
     volumes:
       - ./apps/actual/local_data:/data
     restart: unless-stopped
+    networks:
+      - actual-local
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'

@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 
+import { APPS_PATH, TEMP_PATH } from '../constants.js'
 import { PROJECT_TYPE, type Option } from '../types.js'
 
-import { APPS_PATH, TEMP_PATH } from './constants.js'
 import { createDirectory } from './create-directory.js'
 
 export const controlDirectorySetup = (option: Option) => {

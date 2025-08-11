@@ -20,6 +20,7 @@
     "@lukasbriza/eslint-config": "workspace:*",
     "@lukasbriza/ts-config": "workspace:*",
     "@types/node": "20.14.9",
+    "chalk": "5.4.1",
     "ora": "8.0.1",
     "readline-sync": "1.4.10",
     "terminate": "2.8.0"

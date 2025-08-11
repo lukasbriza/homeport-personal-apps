@@ -1,25 +1,39 @@
-import readlineSync from 'readline-sync'
+import { createProject } from './start/create-project.js'
+import { crossroad, cliStart, settings, cliEnd } from './start/index.js'
 
-import { createMatrix } from './projects/index.js'
-import { chooseName, chooseOption } from './questions/index.js'
-import type { Option } from './types.js'
-import { allowChooseName, controlDirectorySetup, DEFAULT_OPTION_INDEX, OPTIONS } from './utils/index.js'
+const main = async () => {
+  await cliStart()
 
-let selectedOption: Option
+  const { stop, option: crossroadOption } = crossroad()
 
-const option = readlineSync.question(chooseOption())
+  if (stop) {
+    cliEnd()
+    return
+  }
 
-if (option.length === 0 || Number.isNaN(Number(option)) || Number(option) > OPTIONS.length || Number(option) <= 0) {
-  const [array] = OPTIONS
-  selectedOption = array
-  // eslint-disable-next-line no-console
-  console.log(`Choosed default option: ${array[DEFAULT_OPTION_INDEX]}`)
+  // Create project flow
+  if (crossroadOption === 0) {
+    const { stop } = createProject()
+
+    if (stop) {
+      cliEnd()
+      return
+    }
+
+    return
+  }
+
+  // Settings flow
+  if (crossroadOption === 1) {
+    const { stop } = await settings()
+
+    if (stop === false) {
+      await main()
+      return
+    }
+  }
+
+  cliEnd()
 }
 
-const optionIndex = Number(option) - 1
-
-selectedOption = OPTIONS[optionIndex]
-
-const name = allowChooseName(selectedOption[0]) ? chooseName() : ''
-controlDirectorySetup(selectedOption)
-createMatrix(selectedOption[0], name)
+await main()

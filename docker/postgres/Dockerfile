@@ -1,7 +1,12 @@
-FROM postgres:17.4-alpine3.21
+ARG TAG=17.5-alpine3.22
 
-ENV POSTGRES_PASSWORD=password
-ENV POSTGRES_USER=admin
-ENV POSTGRES_DB=coincrusade
+################################
+#Inherit image
+FROM postgres:${TAG}
+
+# Should be defined by enviroment:
+  # POSTGRES_PASSWORD
+  # POSTGRES_USER
+  # POSTGRES_DB
 
 EXPOSE 5432

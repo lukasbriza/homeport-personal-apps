@@ -1,6 +1,6 @@
 {
-  "name": "@lukasbriza/monorepo-template",
-  "version": "0.0.0",
+  "name": "@lukasbriza/actual-budget-manager",
+  "version": "1.0.0",
   "private": true,
   "description": "Universal monorepo template for application from @lukasbriza",
   "author": "https://github.com/lukasbriza",
@@ -14,8 +14,8 @@
     "cleanup": "turbo run cleanup --no-daemon && pnpm run postcleanup",
     "postcleanup": "rimraf .eslintcache tsconfig.tsbuildinfo node_modules",
     "cli": "turbo build --filter @lukasbriza/cli & node ./packages/cli/dist/cli.js",
-    "dev": "turbo dev",
-    "docker:run-local": "docker compose -f docker-compose-local.yaml up --build -V -d",
+    "docker:build-local": "dotenv -e apps/actual/.env.local -- docker compose -f docker-compose-local.yaml build",
+    "docker:run-local": "dotenv -e apps/actual/.env.local -- docker compose -f docker-compose-local.yaml up --build -V -d",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint --no-daemon",
     "lint:fix": "turbo run lint:fix --no-daemon",
@@ -41,6 +41,9 @@
     "turbo": "2.0.6",
     "typescript": "5.5.3",
     "typescript-eslint": "7.15.0"
+  },
+  "devDependencies": {
+    "dotenv-cli": "8.0.0"
   },
   "packageManager": "pnpm@9.4.0",
   "engines": {

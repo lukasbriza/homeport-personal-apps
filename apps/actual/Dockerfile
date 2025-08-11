@@ -1,3 +1,3 @@
-FROM actualbudget/actual-server:latest-alpine
+FROM actualbudget/actual-server:25.5.0-alpine@sha256:066ed7ca765c79b82f7fae743f7b8e3899d05c5f399efd80c4fd15435d6b4476
 
 EXPOSE 5006

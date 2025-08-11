@@ -2,6 +2,7 @@ import { copyFileSync, existsSync } from 'node:fs'
 
 import ora from 'ora'
 
+import { PACKAGES_PATH } from '../constants.js'
 import {
   eslintsrcPath,
   exampleFilePath,
@@ -16,7 +17,7 @@ import {
   tsConfigPath,
 } from '../paths/components-paths.js'
 import { PROJECT_TYPE } from '../types.js'
-import { cleanup, createDirectory, installDeps, PACKAGES_PATH } from '../utils/index.js'
+import { cleanup, createDirectory, installDeps } from '../utils/index.js'
 
 import { createStyles } from './create-styles.js'
 import { createTheme } from './create-theme.js'
@@ -26,7 +27,7 @@ export const createComponents = () => {
   const componentsPath = `${PACKAGES_PATH}/${projectName}`
 
   // SEARCH FOR THEME
-  const hasThemePackageSpinner = ora('Search for theme directory...\n').start()
+  const hasThemePackageSpinner = ora().start('Search for theme directory...\n')
   const hasTheme = existsSync(`${PACKAGES_PATH}/theme`)
   try {
     if (hasTheme) {
@@ -42,7 +43,7 @@ export const createComponents = () => {
   }
 
   // SERACH FOR STYLES
-  const hasStylesPackageSpinner = ora('Search for styles directory...\n').start()
+  const hasStylesPackageSpinner = ora().start('Search for styles directory...\n')
   const hasStyles = existsSync(`${PACKAGES_PATH}/styles`)
   try {
     if (hasStyles) {
@@ -58,7 +59,7 @@ export const createComponents = () => {
   }
 
   // CREATE PROJECT DIRECTORY
-  const makeDirectorySpinner = ora('Create components directory...\n').start()
+  const makeDirectorySpinner = ora().start('Create components directory...\n')
   try {
     createDirectory(componentsPath)
     makeDirectorySpinner.succeed()
@@ -69,7 +70,7 @@ export const createComponents = () => {
   }
 
   // CREATE SRC DIRECTORY
-  const makeSourceSpinner = ora('Create source directory...\n').start()
+  const makeSourceSpinner = ora().start('Create source directory...\n')
   try {
     createDirectory(`${componentsPath}/src`)
     makeSourceSpinner.succeed()
@@ -80,7 +81,7 @@ export const createComponents = () => {
   }
 
   // CREATE TEST DIRECTORY
-  const makeTestSpinner = ora('Create test directory...\n').start()
+  const makeTestSpinner = ora().start('Create test directory...\n')
   try {
     createDirectory(`${componentsPath}/test`)
     makeTestSpinner.succeed()
@@ -91,7 +92,7 @@ export const createComponents = () => {
   }
 
   // CREATE STORIES DIRECTORY
-  const makeStoriesSpinner = ora('Create stories directory...\n').start()
+  const makeStoriesSpinner = ora().start('Create stories directory...\n')
   try {
     createDirectory(`${componentsPath}/stories`)
     createDirectory(`${componentsPath}/stories/example`)
@@ -103,7 +104,7 @@ export const createComponents = () => {
   }
 
   // CREATE EXAMPLE DIRECTORY
-  const makeExampleDirectory = ora('Create example directory...\n').start()
+  const makeExampleDirectory = ora().start('Create example directory...\n')
   try {
     createDirectory(`${componentsPath}/src/example`)
     makeExampleDirectory.succeed()
@@ -114,7 +115,7 @@ export const createComponents = () => {
   }
 
   // COPY FILES
-  const copyFiles = ora('Create project initial files...\n').start()
+  const copyFiles = ora().start('Create project initial files...\n')
   try {
     copyFileSync(prettierignorePath, `${componentsPath}/.prettierignore`)
     copyFileSync(eslintsrcPath, `${componentsPath}/.eslintrc.cjs`)
@@ -137,7 +138,7 @@ export const createComponents = () => {
   }
 
   // INSTALL DEPENDENCIES
-  const installDependencies = ora('Install dependencies...\n').start()
+  const installDependencies = ora().start('Install dependencies...\n')
   try {
     installDeps()
     installDependencies.succeed()

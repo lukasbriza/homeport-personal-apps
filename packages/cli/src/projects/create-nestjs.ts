@@ -3,6 +3,7 @@ import { copyFileSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'n
 
 import ora from 'ora'
 
+import { APPS_PATH } from '../constants.js'
 import {
   eslintIgnorePath,
   eslintrcPath,
@@ -17,11 +18,11 @@ import {
   vitestConfigPath,
 } from '../paths/nestjs-paths.js'
 import { PROJECT_TYPE } from '../types.js'
-import { APPS_PATH, createDirectory, cleanup, installDeps } from '../utils/index.js'
+import { createDirectory, cleanup, installDeps } from '../utils/index.js'
 
 export const createNestJs = (projectName: string) => {
   // CREATE NEST JS PROJECT WITH CLI
-  const createNestProjectSpinner = ora('Creating NestJs project...\n').start()
+  const createNestProjectSpinner = ora().start('Creating NestJs project...\n')
   try {
     execSync(`pnpm nest new ./apps/${projectName} --package-manager pnpm --language ts`, { cwd: APPS_PATH })
     createNestProjectSpinner.succeed()
@@ -32,7 +33,7 @@ export const createNestJs = (projectName: string) => {
   }
 
   // CLEAR NESTJS FILES
-  const clearFilesSpinner = ora('Clear NestJs files...\n').start()
+  const clearFilesSpinner = ora().start('Clear NestJs files...\n')
   try {
     rmSync(`${APPS_PATH}/${projectName}/.git`, { recursive: true, force: true })
     unlinkSync(`${APPS_PATH}/${projectName}/tsconfig.build.json`)
@@ -52,7 +53,7 @@ export const createNestJs = (projectName: string) => {
   }
 
   // COPY NEW FILES
-  const copyNewNestFilesSpinner = ora('Copy new NestJs files...\n').start()
+  const copyNewNestFilesSpinner = ora().start('Copy new NestJs files...\n')
   try {
     createDirectory(`${APPS_PATH}/${projectName}/test`)
     copyFileSync(eslintIgnorePath, `${APPS_PATH}/${projectName}/.eslintignore`)

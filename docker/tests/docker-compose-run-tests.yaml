@@ -4,8 +4,8 @@ services:
       context: ../../
       dockerfile: docker/tests/Dockerfile
       args:
-        - NODE_VERSION=22.11.0
-    container_name: coin-crusade-game_test-runner
+        - TAG=base-latest
+    container_name: test-runner
 
     logging:
       driver: 'json-file'

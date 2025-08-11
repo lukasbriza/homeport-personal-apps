@@ -2,6 +2,7 @@ import { copyFileSync, existsSync } from 'node:fs'
 
 import ora from 'ora'
 
+import { PACKAGES_PATH } from '../constants.js'
 import {
   eslintrcPath,
   indexPath,
@@ -14,7 +15,7 @@ import {
   utilsPath,
 } from '../paths/styles-paths.js'
 import { PROJECT_TYPE } from '../types.js'
-import { addConfigs, addLocalDependency, cleanup, createDirectory, installDeps, PACKAGES_PATH } from '../utils/index.js'
+import { addConfigs, addLocalDependency, cleanup, createDirectory, installDeps } from '../utils/index.js'
 
 import { createTheme } from './create-theme.js'
 
@@ -23,7 +24,7 @@ export const createStyles = () => {
   const basePath = `${PACKAGES_PATH}/${projectName}`
 
   // SEARCH FOR THEME PACKAGE
-  const hasThemeSpinner = ora('Searching for theme package...\n').start()
+  const hasThemeSpinner = ora().start('Searching for theme package...\n')
   let hasTheme = false
   try {
     hasTheme = existsSync(`${PACKAGES_PATH}/theme`)
@@ -48,7 +49,7 @@ export const createStyles = () => {
   }
 
   // CREATE PACKAGE DIRECTORY
-  const createDirectorySpinner = ora('Creating styles directory...\n').start()
+  const createDirectorySpinner = ora().start('Creating styles directory...\n')
   try {
     createDirectory(`${PACKAGES_PATH}/${projectName}`)
     createDirectorySpinner.succeed()
@@ -58,7 +59,7 @@ export const createStyles = () => {
   }
 
   // COPY FILES
-  const copyFilesSpinner = ora('Copy config files...\n').start()
+  const copyFilesSpinner = ora().start('Copy config files...\n')
   try {
     createDirectory(`${basePath}/src`)
     copyFileSync(indexPath, `${basePath}/src/index.ts`)
@@ -79,7 +80,7 @@ export const createStyles = () => {
   }
 
   // ADD THEME DEPENDENCY
-  const addMonorepoDependencies = ora('Add monorepo dependencies...\n')
+  const addMonorepoDependencies = ora().start('Add monorepo dependencies...\n')
   try {
     addConfigs(projectName)
     addLocalDependency(projectName, '@lukasbriza/theme')
@@ -91,7 +92,7 @@ export const createStyles = () => {
   }
 
   // INSTALL DEPENDENCIES
-  const installDependencies = ora('Install dependencies...\n').start()
+  const installDependencies = ora().start('Install dependencies...\n')
   try {
     installDeps()
     installDependencies.succeed()

@@ -2,13 +2,14 @@ import { copyFileSync, rmSync, unlinkSync } from 'node:fs'
 
 import ora from 'ora'
 
+import { APPS_PATH } from '../constants.js'
 import { eslintPath, tsConfigPath, turboFilePath } from '../paths/nextjs-paths.js'
 import { PROJECT_TYPE } from '../types.js'
-import { APPS_PATH, cleanup, createDirectory, downloadNextTemplate } from '../utils/index.js'
+import { cleanup, createDirectory, downloadNextTemplate } from '../utils/index.js'
 
 export const createNextProject = (name: string) => {
   // CREATE PROJECT DIRECTORY
-  const createFolder = ora('Creating NextJs directory...\n').start()
+  const createFolder = ora().start('Creating NextJs directory...\n')
   try {
     createDirectory(`${APPS_PATH}/${name}`)
     createFolder.succeed()
@@ -19,7 +20,7 @@ export const createNextProject = (name: string) => {
   }
 
   // DOWNLOAD TEMPLATE FROM GIT
-  const download = ora('Downloading NextJs template...\n').start()
+  const download = ora().start('Downloading NextJs template...\n')
   try {
     downloadNextTemplate(name)
     download.succeed()
@@ -30,7 +31,7 @@ export const createNextProject = (name: string) => {
   }
 
   // COPY CONFIGURATIONS
-  const copyFiles = ora('Copy configuration files...\n').start()
+  const copyFiles = ora().start('Copy configuration files...\n')
   try {
     unlinkSync(`${APPS_PATH}/${name}/tsconfig.json`)
     unlinkSync(`${APPS_PATH}/${name}/pnpm-lock.yaml`)

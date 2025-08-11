@@ -1,0 +1,64 @@
+{
+  "name": "@lukasbriza/components",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist tsconfig.build.tsbuildinfo",
+    "build": "tsc --build tsconfig.build.json",
+    "cleanup": "rimraf .eslintcache .turbo tsconfig.tsbuildinfo tsconfig.build.tsbuildinfo coverage dist node_modules",
+    "dev": "pnpm run build --watch",
+    "fix": "run-p ts format:fix lint:fix",
+    "format": "prettier --check \"./**/*.{json,md,mdx}\"",
+    "format:fix": "pnpm run format --write",
+    "lint": "eslint --cache --ext cjs,js,ts,tsx .",
+    "lint:fix": "pnpm run lint --fix",
+    "ts": "tsc --build tsconfig.json"
+  },
+  "dependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@lukasbriza/styles": "workspace:*",
+    "@lukasbriza/theme": "workspace:*",
+    "@mui/base": "5.0.0-beta.40",
+    "@mui/material": "5.16.5",
+    "@mui/system": "5.16.5",
+    "@mui/types": "7.2.15",
+    "@mui/utils": "5.16.5",
+    "clsx": "2.1.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-hook-form": "7.52.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.24.7",
+    "@babel/preset-env": "7.24.7",
+    "@babel/preset-react": "7.24.7",
+    "@babel/preset-typescript": "7.24.7",
+    "@storybook/blocks": "8.2.6",
+    "@storybook/react": "8.2.6",
+    "@testing-library/react": "16.0.0",
+    "@testing-library/dom": "10.4.0",
+    "@types/node": "20.14.9",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "storybook": "8.2.6",
+    "typescript": "5.5.3",
+    "vitest": "2.0.4"
+  }
+}

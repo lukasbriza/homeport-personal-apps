@@ -2,6 +2,7 @@ import { copyFileSync, existsSync } from 'node:fs'
 
 import ora from 'ora'
 
+import { APPS_PATH, PACKAGES_PATH, STORYBOOK_PATH } from '../constants.js'
 import {
   babelConfigPath,
   eslintIgnorePath,
@@ -22,22 +23,14 @@ import {
 } from '../paths/storybook-paths.js'
 import { addTheme } from '../questions/index.js'
 import { PROJECT_TYPE } from '../types.js'
-import {
-  addConfigs,
-  APPS_PATH,
-  cleanup,
-  createDirectory,
-  installDeps,
-  PACKAGES_PATH,
-  STORYBOOK_PATH,
-} from '../utils/index.js'
+import { addConfigs, cleanup, createDirectory, installDeps } from '../utils/index.js'
 
 export const createStorybook = () => {
   const projectName = 'storybook'
   const storybookPath = `${APPS_PATH}/${projectName}`
 
   // CREATE DIRECTORY
-  const makeDirectorySpinner = ora('Create storybook directory...\n').start()
+  const makeDirectorySpinner = ora().start('Create storybook directory...\n')
   try {
     createDirectory(storybookPath)
     makeDirectorySpinner.succeed()
@@ -47,7 +40,7 @@ export const createStorybook = () => {
     return
   }
 
-  const searchingForThemeSpinner = ora('Searching for theme package...\n').start()
+  const searchingForThemeSpinner = ora().start('Searching for theme package...\n')
   const hasTheme = existsSync(`${PACKAGES_PATH}/theme`)
   let wantTheme = false
 
@@ -65,7 +58,7 @@ export const createStorybook = () => {
   }
 
   // COPY CONFIG FILES
-  const copyStorybookFilesSpinner = ora('Copy storybook files...\n').start()
+  const copyStorybookFilesSpinner = ora().start('Copy storybook files...\n')
   try {
     createDirectory(`${storybookPath}/config`)
     copyFileSync(storybookMainPath, `${storybookPath}/config/main.ts`)
@@ -91,7 +84,7 @@ export const createStorybook = () => {
   }
 
   // ADD WORKSPACE REFERENCE
-  const addConfigsSpinner = ora('Add configs...\n').start()
+  const addConfigsSpinner = ora().start('Add configs...\n')
   try {
     addConfigs('storybook')
     addConfigsSpinner.succeed()
@@ -102,7 +95,7 @@ export const createStorybook = () => {
   }
 
   // INSTALL DEPENDENCIES
-  const installDepsSpinner = ora('Installing dependencies...\n').start()
+  const installDepsSpinner = ora().start('Installing dependencies...\n')
   try {
     installDeps()
     installDepsSpinner.succeed()

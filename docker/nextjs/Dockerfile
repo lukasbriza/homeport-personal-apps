@@ -1,8 +1,22 @@
-FROM lbriza/coincrusade-runner-game:base AS alpine
+# ARG TO BE DEFINED:
+# - TAG
+# - APP
+# - PORT
+
+# For all available tags look at https://hub.docker.com/repository/docker/lbriza/shared/tags
+ARG TAG=base-latest
+
+FROM lbriza/shared:${TAG} AS shared
 
 ################################
-# Setup turbo on the alpine base
-FROM alpine AS base
+# Corepack preparation
+COPY package.json .
+RUN corepack prepare "$(jq -r '.packageManager' package.json)" --activate 
+RUN rm package.json
+
+################################
+# Setup turbo on the shared image base
+FROM shared AS base
 RUN npm install turbo --global
 
 WORKDIR /application
@@ -43,28 +57,24 @@ RUN --mount=type=cache,id=pnpm,target=/application/.pnpm-store pnpm install --fr
 COPY --from=pruner /application/out/full/ .
 
 # Build and ceanup
-RUN turbo build --filter=@lukasbriza/${APP}
-RUN --mount=type=cache,id=pnpm,target=/application/.pnpm-store pnpm prune --prod --no-optional
-RUN rm -rf ./**/*/src && \
-    rm -rf ./**/*/test && \
-    rm -rf ./**/*/tests && \
-    rm -rf ./**/*/.turbo && \
-    rm -rf ./**/*/*.md
-RUN node-prune
-RUN sh -c "rm -rf $(pnpm store path)"
+RUN turbo build --filter=@lukasbriza/${APP} && \
+    pnpm prune --prod --no-optional && \
+    find . -type d \( -name "src" -o -name "test" -o -name "tests" -o -name ".turbo" \) -exec rm -rf {} + && \
+    find . -type f -name "*.md" -delete && \
+    node-prune && \
+    rm -rf $(pnpm store path)
 
 ################################
 # Final image
-FROM alpine AS runner
+FROM shared AS runner
 ARG APP
 ARG PORT=3000
 
 ENV PORT=${PORT}
-ENV HOSTNAME="0.0.0.0"
 ENV TZ=Europe/Prague
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs && \
+RUN addgroup --system --gid 1001 nextjs && \
     adduser --system --uid 1001 nextjs
 USER nextjs
 
@@ -72,7 +82,4 @@ WORKDIR /application
 COPY --from=builder --chown=nextjs:nextjs /application . 
 
 WORKDIR /application/apps/${APP}
-EXPOSE ${PORT}
-CMD pnpm next start -p ${PORT}
-
-
+CMD sh -c "pnpm next start -p ${PORT}"

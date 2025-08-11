@@ -1,0 +1,6 @@
+{
+  "extends": "@lukasbriza/ts-config/library",
+  "exclude": ["dist", "node_modules"],
+  "include": [".eslintrc.cjs", "**/*.js", "**/*.ts", "**/*.tsx"],
+  "references": [{ "path": "../theme/tsconfig.build.json" }]
+}

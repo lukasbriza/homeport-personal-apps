@@ -1,8 +1,5 @@
 {
-  "name": "actual",
-  "version": "0.0.0",
-  "private": true,
-  "scripts": {
-    "dev": "echo 'Add dev script here'"
-  }
+  "name": "@lukasbriza/actual",
+  "version": "1.0.0",
+  "private": true
 }
