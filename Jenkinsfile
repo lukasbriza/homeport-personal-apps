@@ -1,7 +1,8 @@
 @Library('jenkins-shared-library') _
 
 import api.ApiProcessor
-import api DockerApi
+import api.DockerApi
+import Utils
 
 pipeline {
   agent any
@@ -11,12 +12,23 @@ pipeline {
   }
   stages {
     stage("Check workspace") {
-      checkWorkspace("${env.PROJECT_DIR}")
+      when {
+        expression { fileExists(env.PROJECT_DIR) }
+      }
+      steps {
+        script {
+          checkWorkspace("${env.PROJECT_DIR}")
+        }
+      }
     }
 
-    stage("Check prerequisities") {
-      // Creates in env: PLATFORM, PROJECT_NAME, ENVIRONMENT, VERSION, COMPOSE_FILE_NAME
-      checkPrerequisities(4, env.API_PROCESSOR_API)
+    stage("Checking prerequisities") {
+      steps {
+        script {
+          // Creates in env: PLATFORM, PROJECT_NAME, ENVIRONMENT, VERSION, COMPOSE_FILE_NAME
+          checkPrerequisities(4, env.BRANCH_NAME, env.API_PROCESSOR_API)
+        }
+      }
     }
 
     stage("Fetching secrets") {
@@ -38,57 +50,82 @@ pipeline {
     }
 
     stage("Clone branch") {
-      cloneBranch("https://lukasbriza:${env.GITHUB_PAT}@${env.GITHUB_URL}.git")
+      steps {
+        script {
+          cloneBranch("https://lukasbriza:${env.GITHUB_PAT}@${env.GITHUB_URL}.git")
+        }
+      }
     }
 
-    stage("Build images") {
-      buildImages(env.COMPOSE_FILE_NAME)
+    stage("Build Docker images") {
+      steps {
+        script {
+          buildImages(env.COMPOSE_FILE_NAME)
+        }
+      }
     }
 
     stage("Try to run stack") {
-      runComposeFile("Running stack", env.COMPOSE_FILE_NAME, [env.HOST_DATABASE_PATH])
+      steps {
+        script {
+          runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_DATABASE_PATH])
+        }
+      }
     }
 
     stage("Stop stack") {
-      stopComposeStack(env.COMPOSE_FILE_NAME)
+      steps {
+        script {
+          stopComposeStack(env.COMPOSE_FILE_NAME)
+        }
+      }
     }
 
-    stage ("Push images") {
-      pushComposeFile(env.DOCKER_PASSWORD, env.DOCKER_NAME, env.COMPOSE_FILE_NAME)
+    stage("Push images") {
+      steps {
+        script {
+          pushComposeFile(env.DOCKER_PASSWORD, env.DOCKER_NAME, env.COMPOSE_FILE_NAME)
+        }
+      }
     }
 
-    stage("Update/Create Portainer stack") {
-      deploy(
-        env.API_PROCESSOR_API,
-        env.PLATFORM,
-        env.PROJECT_NAME,
-        env.ENVIRONMENT,
-        "https://${env.GITHUB_URL}",
-        "lukasbriza",
-        env.GITHUB_PAT,
-        env.COMPOSE_FILE_NAME,
-        [
-          ["name": "DATABASE_PORT", "value": "${env.DATABASE_PORT}"],
-          ["name": "HOST_DATABASE_PATH", "value": "${env.HOST_DATABASE_PATH}"]
-        ]
-      )
+    stage("Deploy application") {
+      steps {
+        script {
+          deploy(
+            env.API_PROCESSOR_API,
+            env.PLATFORM,
+            env.PROJECT_NAME,
+            env.ENVIRONMENT,
+            "https://${env.GITHUB_URL}",
+            "lukasbriza",
+            env.GITHUB_PAT,
+            env.COMPOSE_FILE_NAME,
+            [
+              ["name": "DATABASE_PORT", "value": "${env.DATABASE_PORT}"],
+              ["name": "HOST_DATABASE_PATH", "value": "${env.HOST_DATABASE_PATH}"]
+            ]
+          )
+        }
+      }
     }
   }
   post {
     always {
       script {
         echo "ℹ️ Cleaning up"
+        def dockerApi = new DockerApi(this)
 
         if (fileExists("${env.PROJECT_DIR}")) {
           dir ("${env.PROJECT_DIR}") {
-            def dockerApi = new DockerApi(this)
             dockerApi.stopDockerCompose(env.COMPOSE_FILE_NAME)
           } 
             sh "rm -rf ${env.PROJECT_DIR}"
         }
         
         dockerApi.cleanDocker()
-        Utils.recursiveRemoveDir(env.DATABASE_PATH)
+        def utils = new Utils(this)
+        utils.recursiveRemoveDir(env.HOST_DATABASE_PATH)
       }
     }
 
