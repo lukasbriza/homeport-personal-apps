@@ -1,0 +1,26 @@
+# NEED TO DEFINE THIS VARIABLES IN .ENV #
+#########################################
+#              Actual                   #
+#########################################
+# - HOST_HOMER_PORT
+# - HOST_HOMER_DATA_PATH
+
+name: homeport-homer-prod
+
+services:
+  homer:
+    image: b4bz/homer
+    container_name: homer-prod
+    volumes:
+      - ${HOST_HOMER_DATA_PATH}:/www/assets
+    ports:
+      - ${HOST_HOMER_PORT}:8080
+    user: 1000:1000
+    environment:
+      - INIT_ASSETS=1
+    restart: unless-stopped
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
