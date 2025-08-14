@@ -48,6 +48,11 @@ pipeline {
             env.HOST_DATABASE_PATH = secrets["HOST_DATABASE_PATH"]
           }
 
+          if(env.PROJECT_NAME == "homer"){
+            env.HOST_HOMER_DATA_PATH = secrets["HOST_HOMER_DATA_PATH"]
+            env.HOST_HOMER_PORT = secrets["HOST_HOMER_PORT"]
+          }
+
           env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMENT}.yaml"
         }
       }
@@ -74,6 +79,10 @@ pipeline {
         script {
           if(env.PROJECT_NAME == "actual"){
             runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_DATABASE_PATH])
+          }
+
+          if(env.PROJECT_NAME == "homer"){
+            runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_HOMER_DATA_PATH])
           }
         }
       }
@@ -114,6 +123,23 @@ pipeline {
               ]
             )
           }
+
+          if(env.PROJECT_NAME == "homer"){
+            deploy(
+              env.API_PROCESSOR_API,
+              env.PLATFORM,
+              env.PROJECT_NAME,
+              env.ENVIRONMENT,
+              "https://${env.GITHUB_URL}",
+              "lukasbriza",
+              env.GITHUB_PAT,
+              env.COMPOSE_FILE_NAME,
+              [
+                ["name": "HOST_HOMER_PORT", "value": "${env.HOST_HOMER_PORT}"],
+                ["name": "HOST_HOMER_DATA_PATH", "value": "${env.HOST_HOMER_DATA_PATH}"]
+              ]
+            )
+          }
         }
       }
     }
@@ -136,6 +162,10 @@ pipeline {
 
         if(env.PROJECT_NAME == "actual"){
           utils.recursiveRemoveDir(env.HOST_DATABASE_PATH)
+        }
+
+        if(env.PROJECT_NAME == "homer"){
+          utils.recursiveRemoveDir(env.HOST_HOMER_DATA_PATH)
         }
       }
     }
