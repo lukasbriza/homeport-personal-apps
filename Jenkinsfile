@@ -7,8 +7,8 @@ import Utils
 pipeline {
   agent any
   environment {
-    GITHUB_URL = "github.com/lukasbriza/homeport-actual-budget-manager"
-    PROJECT_DIR = "homeport-actual-budget-manager"
+    GITHUB_URL = "github.com/lukasbriza/homeport-personal-apps"
+    PROJECT_DIR = "homeport-personal-apps"
   }
   stages {
     stage("Check workspace") {
@@ -43,8 +43,12 @@ pipeline {
           env.SEND_EMAIL_ADDRESS = sharedSecrets["SEND_EMAIL_ADDRESS"]
           env.GITHUB_PAT = sharedSecrets["GITHUB_PAT"]
 
-          env.DATABASE_PORT = secrets["DATABASE_PORT"]
-          env.HOST_DATABASE_PATH = secrets["HOST_DATABASE_PATH"]
+          if(env.PROJECT_NAME == "actual"){
+            env.DATABASE_PORT = secrets["DATABASE_PORT"]
+            env.HOST_DATABASE_PATH = secrets["HOST_DATABASE_PATH"]
+          }
+
+          env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMEN}.yaml"
         }
       }
     }
@@ -68,7 +72,9 @@ pipeline {
     stage("Try to run stack") {
       steps {
         script {
-          runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_DATABASE_PATH])
+          if(env.PROJECT_NAME == "actual"){
+            runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_DATABASE_PATH])
+          }
         }
       }
     }
@@ -92,20 +98,22 @@ pipeline {
     stage("Deploy application") {
       steps {
         script {
-          deploy(
-            env.API_PROCESSOR_API,
-            env.PLATFORM,
-            env.PROJECT_NAME,
-            env.ENVIRONMENT,
-            "https://${env.GITHUB_URL}",
-            "lukasbriza",
-            env.GITHUB_PAT,
-            env.COMPOSE_FILE_NAME,
-            [
-              ["name": "DATABASE_PORT", "value": "${env.DATABASE_PORT}"],
-              ["name": "HOST_DATABASE_PATH", "value": "${env.HOST_DATABASE_PATH}"]
-            ]
-          )
+          if(env.PROJECT_NAME == "actual"){
+            deploy(
+              env.API_PROCESSOR_API,
+              env.PLATFORM,
+              env.PROJECT_NAME,
+              env.ENVIRONMENT,
+              "https://${env.GITHUB_URL}",
+              "lukasbriza",
+              env.GITHUB_PAT,
+              env.COMPOSE_FILE_NAME,
+              [
+                ["name": "DATABASE_PORT", "value": "${env.DATABASE_PORT}"],
+                ["name": "HOST_DATABASE_PATH", "value": "${env.HOST_DATABASE_PATH}"]
+              ]
+            )
+          }
         }
       }
     }

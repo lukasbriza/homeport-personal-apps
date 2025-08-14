@@ -1,5 +1,6 @@
 test
 node_modules
+**/node_modules
 .turbo
 .gitignore
 _avast_

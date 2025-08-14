@@ -1,3 +1,13 @@
-# Actual Budget — Homelab Deployment
+# Homeport personal apps
 
-This project is a customized deployment of [Actual Budget](https://actualbudget.org/), an open-source personal budgeting app, set up to run on a private homelab environment. No changes to the app’s core functionality were made; the main modification is a custom deployment pipeline tailored for smooth, automated installation and updates within my homelab infrastructure. This setup allows easy self-hosted use of Actual Budget with reliable, repeatable deployment. For more details about the deployment process, please see the `DEPLOYMENT.md` file.
+This repository contains customized deployment configurations for all my personal self-hosted applications running in the **Homeport Homelab**.
+
+## 🧭 Overview
+
+- **Actual budget manager** - Personal finances manager
+- **Ghostfolio** - Extended Ghostfolio application
+
+## 📘 Additional Documentation
+
+- 🛠️ **Contributing**: Interested in contributing? Please refer to [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines and best practices.
+- 🚀 **Deployment**: For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).

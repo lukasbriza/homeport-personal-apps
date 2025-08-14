@@ -15,12 +15,12 @@ services:
   actual:
     build:
       context: .
-      dockerfile: apps/actual/Dockerfile
+      dockerfile: ./Dockerfile
     container_name: actual-budget-manager-local
     ports:
       - '${ACTUAL_PORT}:5006'
     volumes:
-      - ./apps/actual/local_data:/data
+      - ./local_data:/data
     restart: unless-stopped
     networks:
       - actual-local

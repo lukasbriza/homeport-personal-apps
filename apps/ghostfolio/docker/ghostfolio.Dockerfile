@@ -1,0 +1,3 @@
+FROM ghostfolio/ghostfolio:2.161.0@sha256:f4be7488fdaefd8270a48e3d8069510184f385044e20b5941d1226d9d96bdefe
+
+EXPOSE 3333

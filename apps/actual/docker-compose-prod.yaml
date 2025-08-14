@@ -16,7 +16,7 @@ services:
   actual:
     build:
       context: .
-      dockerfile: apps/actual/Dockerfile
+      dockerfile: ./Dockerfile
     image: lbriza/actual:app-prod
     container_name: actual-budget-manager-prod
     ports:

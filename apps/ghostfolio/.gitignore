@@ -1,0 +1,6 @@
+.env*
+local_data
+redis_data
+/**/*.generated.ts
+/prisma/**/generated
+/schema.graphql
