@@ -48,7 +48,7 @@ pipeline {
             env.HOST_DATABASE_PATH = secrets["HOST_DATABASE_PATH"]
           }
 
-          env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMEN}.yaml"
+          env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMENT}.yaml"
         }
       }
     }
@@ -133,7 +133,10 @@ pipeline {
         
         dockerApi.cleanDocker()
         def utils = new Utils(this)
-        utils.recursiveRemoveDir(env.HOST_DATABASE_PATH)
+
+        if(env.PROJECT_NAME == "actual"){
+          utils.recursiveRemoveDir(env.HOST_DATABASE_PATH)
+        }
       }
     }
 
