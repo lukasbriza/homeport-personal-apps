@@ -179,6 +179,18 @@ importers:
         specifier: 5.5.3
         version: 5.5.3
 
+  apps/homer:
+    devDependencies:
+      dotenv-cli:
+        specifier: 8.0.0
+        version: 8.0.0
+
+  apps/vaultwarden:
+    devDependencies:
+      dotenv-cli:
+        specifier: 8.0.0
+        version: 8.0.0
+
   packages/cli:
     dependencies:
       '@lukasbriza/eslint-config':
@@ -7469,7 +7481,7 @@ snapshots:
 
   foreground-child@3.2.1:
     dependencies:
-      cross-spawn: 7.0.3
+      cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
   fork-ts-checker-webpack-plugin@9.0.2(typescript@5.3.3)(webpack@5.92.1):
