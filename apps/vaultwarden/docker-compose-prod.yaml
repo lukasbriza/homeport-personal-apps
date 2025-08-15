@@ -1,0 +1,24 @@
+# NEED TO DEFINE THIS VARIABLES IN .ENV #
+#########################################
+#            Vaultwarden                #
+#########################################
+# - VAULTWARDEN_DOMAIN
+# - VAULTWARDEN_ADMIN_TOKEN
+# - HOST_VAULTWARDEN_PORT
+# - HOST_VAULTWARDEN_DATA_PATH
+
+name: homeport-vaultwarden-prod
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden-prod
+    environment:
+      - DOMAIN=${VAULTWARDEN_DOMAIN}
+      - ADMIN_TOKEN=${VAULTWARDEN_ADMIN_TOKEN}
+    ports:
+      - ${HOST_VAULTWARDEN_PORT}:80
+    volumes:
+      - ${HOST_VAULTWARDEN_DATA_PATH}:/data/
+    restart: unless-stopped
+

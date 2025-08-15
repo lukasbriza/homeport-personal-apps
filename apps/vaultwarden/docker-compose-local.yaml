@@ -1,0 +1,20 @@
+# VARIABLES DEFINED IN .ENV.LOCAL FILES #
+#########################################
+# - apps/vaultwarden
+#
+# To work with .env.local files you need to run `docker:build-local` or `docker:run-local`.
+
+name: homeport-vaultwarden-local
+
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden-local
+    environment:
+      - DOMAIN=${VAULTWARDEN_DOMAIN}
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+    ports:
+      - ${HOST_VAULTWARDEN_PORT}:80
+    volumes:
+      - ./local_data/:/data/
+    restart: unless-stopped

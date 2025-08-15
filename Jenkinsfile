@@ -53,6 +53,17 @@ pipeline {
             env.HOST_HOMER_PORT = secrets["HOST_HOMER_PORT"]
           }
 
+          if(env.PROJECT_NAME == "vaultwarden"){
+            env.VAULTWARDEN_DOMAIN = secrets["VAULTWARDEN_DOMAIN"]
+            env.HOST_VAULTWARDEN_PORT = secrets["HOST_VAULTWARDEN_PORT"]
+            env.HOST_VAULTWARDEN_DATA_PATH = secrets["HOST_VAULTWARDEN_DATA_PATH"]
+
+            // Will be defined during runtime when created for the first time.
+            if (secrets["VAULTWARDEN_ADMIN_TOKEN"]){
+              env.VAULTWARDEN_ADMIN_TOKEN = secrets["VAULTWARDEN_ADMIN_TOKEN"]
+            }
+          }
+
           env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMENT}.yaml"
         }
       }
@@ -83,6 +94,10 @@ pipeline {
 
           if(env.PROJECT_NAME == "homer"){
             runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_HOMER_DATA_PATH])
+          }
+
+          if(env.PROJECT_NAME == "vaultwarden"){
+            runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_VAULTWARDEN_DATA_PATH])
           }
         }
       }
@@ -140,6 +155,25 @@ pipeline {
               ]
             )
           }
+
+          if(env.PROJECT_NAME == "vaultwarden"){
+            deploy(
+              env.API_PROCESSOR_API,
+              env.PLATFORM,
+              env.PROJECT_NAME,
+              env.ENVIRONMENT,
+              "https://${env.GITHUB_URL}",
+              "lukasbriza",
+              env.GITHUB_PAT,
+              env.COMPOSE_FILE_NAME,
+              [
+                ["name": "VAULTWARDEN_DOMAIN", "value": "${env.VAULTWARDEN_DOMAIN}"],
+                ["name": "HOST_VAULTWARDEN_PORT", "value": "${env.HOST_VAULTWARDEN_PORT}"],
+                ["name": "HOST_VAULTWARDEN_DATA_PATH", "value": "${env.HOST_VAULTWARDEN_DATA_PATH}"],
+                ["name": "VAULTWARDEN_ADMIN_TOKEN", "value": "${env.VAULTWARDEN_ADMIN_TOKEN}"]
+              ]
+            )
+          }
         }
       }
     }
@@ -166,6 +200,10 @@ pipeline {
 
         if(env.PROJECT_NAME == "homer"){
           utils.recursiveRemoveDir(env.HOST_HOMER_DATA_PATH)
+        }
+
+        if(env.PROJECT_NAME == "vaultwarden"){
+          utils.recursiveRemoveDir(env.HOST_VAULTWARDEN_DATA_PATH)
         }
       }
     }
