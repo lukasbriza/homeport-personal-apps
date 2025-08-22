@@ -204,6 +204,7 @@ pipeline {
               env.COMPOSE_FILE_NAME,
               [
                 ["name": "SEAFILE_MYSQL_ROOT_PASSWORD", "value": "${env.SEAFILE_MYSQL_ROOT_PASSWORD}"],
+                ["name": "SEAFILE_MYSQL_DB_PASSWORD", "value": "${env.SEAFILE_MYSQL_DB_PASSWORD}"],
                 ["name": "HOST_SEAFILE_PORT", "value": "${env.HOST_SEAFILE_PORT}"],
                 ["name": "SEAFILE_ADMIN_EMAIL", "value": "${env.SEAFILE_ADMIN_EMAIL}"],
                 ["name": "SEAFILE_ADMIN_PASSWORD", "value": "${env.SEAFILE_ADMIN_PASSWORD}"],
