@@ -64,6 +64,19 @@ pipeline {
             }
           }
 
+          if(env.PROJECT_NAME == "seafile"){
+            env.SEAFILE_MYSQL_ROOT_PASSWORD = secrets["SEAFILE_MYSQL_ROOT_PASSWORD"]
+            env.HOST_SEAFILE_PORT = secrets["HOST_SEAFILE_PORT"]
+            env.SEAFILE_MYSQL_DB_PASSWORD = secrets["SEAFILE_MYSQL_DB_PASSWORD"]
+            env.SEAFILE_ADMIN_EMAIL = secrets["SEAFILE_ADMIN_EMAIL"]
+            env.SEAFILE_ADMIN_PASSWORD = secrets["SEAFILE_ADMIN_PASSWORD"]
+            env.SEAFILE_SERVER_HOSTNAME = secrets["SEAFILE_SERVER_HOSTNAME"]
+            env.SEAFILE_SERVER_PROTOCOL = secrets["SEAFILE_SERVER_PROTOCOL"]
+            env.JWT_PRIVATE_KEY = secrets["JWT_PRIVATE_KEY"]
+            env.HOST_SEAFILE_DATA_PATH = secrets["HOST_SEAFILE_DATA_PATH"]
+            env.HOST_SEAFILE_DB_DATA_PATH = secrets["HOST_SEAFILE_DB_DATA_PATH"]
+          }
+
           env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMENT}.yaml"
         }
       }
@@ -98,6 +111,10 @@ pipeline {
 
           if(env.PROJECT_NAME == "vaultwarden"){
             runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_VAULTWARDEN_DATA_PATH])
+          }
+
+          if(env.PROJECT_NAME == "seafile"){
+            runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_SEAFILE_DATA_PATH, env.HOST_SEAFILE_DB_DATA_PATH])
           }
         }
       }
@@ -174,6 +191,30 @@ pipeline {
               ]
             )
           }
+
+          if(env.PROJECT_NAME == "seafile"){
+            deploy(
+              env.API_PROCESSOR_API,
+              env.PLATFORM,
+              env.PROJECT_NAME,
+              env.ENVIRONMENT,
+              "https://${env.GITHUB_URL}",
+              "lukasbriza",
+              env.GITHUB_PAT,
+              env.COMPOSE_FILE_NAME,
+              [
+                ["name": "SEAFILE_MYSQL_ROOT_PASSWORD", "value": "${env.SEAFILE_MYSQL_ROOT_PASSWORD}"],
+                ["name": "HOST_SEAFILE_PORT", "value": "${env.HOST_SEAFILE_PORT}"],
+                ["name": "SEAFILE_ADMIN_EMAIL", "value": "${env.SEAFILE_ADMIN_EMAIL}"],
+                ["name": "SEAFILE_ADMIN_PASSWORD", "value": "${env.SEAFILE_ADMIN_PASSWORD}"],
+                ["name": "SEAFILE_SERVER_HOSTNAME", "value": "${env.SEAFILE_SERVER_HOSTNAME}"],
+                ["name": "SEAFILE_SERVER_PROTOCOL", "value": "${env.SEAFILE_SERVER_PROTOCOL}"],
+                ["name": "JWT_PRIVATE_KEY", "value": "${env.JWT_PRIVATE_KEY}"],
+                ["name": "HOST_SEAFILE_DATA_PATH", "value": "${env.HOST_SEAFILE_DATA_PATH}"],
+                ["name": "HOST_SEAFILE_DB_DATA_PATH", "value": "${env.HOST_SEAFILE_DB_DATA_PATH}"]
+              ]
+            )
+          }
         }
       }
     }
@@ -204,6 +245,11 @@ pipeline {
 
         if(env.PROJECT_NAME == "vaultwarden"){
           utils.recursiveRemoveDir(env.HOST_VAULTWARDEN_DATA_PATH)
+        }
+
+        if(env.PROJECT_NAME == "seafile"){
+          utils.recursiveRemoveDir(env.HOST_SEAFILE_DATA_PATH)
+          utils.recursiveRemoveDir(env.HOST_SEAFILE_DB_DATA_PATH)
         }
       }
     }
