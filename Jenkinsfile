@@ -211,6 +211,7 @@ pipeline {
                 ["name": "SEAFILE_SERVER_HOSTNAME", "value": "${env.SEAFILE_SERVER_HOSTNAME}"],
                 ["name": "SEAFILE_SERVER_PROTOCOL", "value": "${env.SEAFILE_SERVER_PROTOCOL}"],
                 ["name": "JWT_PRIVATE_KEY", "value": "${env.JWT_PRIVATE_KEY}"],
+                ["name": "REDIS_PASSWORD", "value": "${env.REDIS_PASSWORD}"],
                 ["name": "HOST_SEAFILE_DATA_PATH", "value": "${env.HOST_SEAFILE_DATA_PATH}"],
                 ["name": "HOST_SEAFILE_DB_DATA_PATH", "value": "${env.HOST_SEAFILE_DB_DATA_PATH}"]
               ]
