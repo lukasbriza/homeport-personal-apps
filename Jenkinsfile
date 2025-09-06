@@ -75,6 +75,7 @@ pipeline {
             env.JWT_PRIVATE_KEY = secrets["JWT_PRIVATE_KEY"]
             env.HOST_SEAFILE_DATA_PATH = secrets["HOST_SEAFILE_DATA_PATH"]
             env.HOST_SEAFILE_DB_DATA_PATH = secrets["HOST_SEAFILE_DB_DATA_PATH"]
+            env.REDIS_PASSWORD = secrets["REDIS_PASSWORD"]
           }
 
           env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMENT}.yaml"
