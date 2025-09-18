@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { WithLogger } from '../../classes/with-logger'
-import { PrivateLogMethod, ServiceLogMethod } from '../../decorators'
+import { PrivateLogMethod, ServiceLogMethod } from '../../loggers'
 import { CountryCodesScraperService } from '../../scrapers/country-codes'
 import { EicTransactionDto, FeeDto, FeesDto, FondDefinitionDto } from '../../scrapers/eic/eic-scraper.dto'
 import { JustEtfScraperService } from '../../scrapers/just-etf'

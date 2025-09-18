@@ -1,23 +1,22 @@
-import { Controller, Get } from '@nestjs/common'
+import { Controller, Patch, UseGuards } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 
-import { EicScraperService } from '../scrapers/eic'
+import { JwtAuthGuard } from '../auth'
 
 import { ApiService } from './api.service'
 
+@ApiTags('API')
 @Controller('api')
 export class ApiController {
-  constructor(
-    private readonly apiService: ApiService,
-    private readonly eicScraper: EicScraperService,
-  ) {}
+  constructor(private readonly apiService: ApiService) {}
 
-  @Get('update-eic-data')
+  @Patch('update-eic-data')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update EIC data' })
+  @ApiResponse({ status: 200, description: 'EIC data updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
   async updateEicData() {
     return this.apiService.updateEicData()
-  }
-
-  @Get('test')
-  async test() {
-    return this.eicScraper.getAllTransactionsAndOrdersAndFees()
   }
 }

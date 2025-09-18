@@ -7,7 +7,7 @@ import { validate, validateOrReject } from 'class-validator'
 import * as puppeteer from 'puppeteer'
 
 import { WithLogger } from '../../classes/with-logger'
-import { PrivateLogMethod, ServiceLogMethod } from '../../decorators'
+import { PrivateLogMethod, ServiceLogMethod } from '../../loggers'
 import { ApiUrlConstructorService } from '../../services/api-url-constructor'
 import { AppConfigTypes, ExtendedPupeteerDto, PuppeteerDto } from '../../types'
 import {

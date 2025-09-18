@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
-import { ServiceLogMethod } from '../../decorators'
+import { ServiceLogMethod } from '../../loggers'
 import { AppConfigTypes } from '../../types'
 import { dateToDashDateString } from '../../utils'
 

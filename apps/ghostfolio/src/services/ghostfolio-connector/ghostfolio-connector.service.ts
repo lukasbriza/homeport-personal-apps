@@ -4,7 +4,7 @@ import axios, { AxiosResponse } from 'axios'
 import { validate } from 'class-validator'
 
 import { WithLogger } from '../../classes/with-logger'
-import { LogMethod, PrivateLogMethod, ServiceLogMethod } from '../../decorators'
+import { LogMethod, PrivateLogMethod, ServiceLogMethod } from '../../loggers'
 import { AppConfigTypes } from '../../types'
 import {
   axiosCallWrapper,

@@ -1,0 +1,57 @@
+# VARIABLES DEFINED IN .ENV.LOCAL FILES #
+#########################################
+# - apps/keycloak
+#
+# To work with .env.local files you need to run `docker:build-local` or `docker:run-local`.
+
+networks:
+  keycloak-local:
+
+name: homeport-keycloak-local
+
+services:
+  keycloak:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    container_name: keycloak-local
+    env_file:
+      - ./.env.local
+    restart: always
+    ports:
+      - ${KEYCLOAK_PORT_EXPORT}:8080
+    networks:
+      - keycloak-local
+    depends_on:
+      keycloak-database:
+        condition: service_healthy
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  keycloak-database:
+    image: postgres:14-alpine
+    container_name: keycloak-database-local
+    env_file:
+      - ./.env.local
+    environment:
+      - POSTGRES_DB=${KEYCLOAK_DB_DATABASE}
+      - POSTGRES_USER=${KEYCLOAK_DB_USER}
+      - POSTGRES_PASSWORD=${KEYCLOAK_DB_PASSWORD}
+    restart: always
+    networks:
+      - keycloak-local
+    volumes:
+      - ${HOST_KEYCLOAK_DATABASE_DATA_PATH}:/var/lib/postgresql/data
+    healthcheck:
+      test: 'pg_isready --username=${KC_DB_USERNAME} && psql --username=${KC_DB_USERNAME} --list'
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
