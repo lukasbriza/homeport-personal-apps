@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 
 import { WithLogger } from '../classes/with-logger'
-import { LogMethod, PrivateLogMethod } from '../decorators'
+import { LogMethod, PrivateLogMethod } from '../loggers'
 import { EicScraperService, FondDefinitionDto } from '../scrapers/eic'
 import { JustEtfScraperService } from '../scrapers/just-etf'
 import { GhostfolioConnectorService, MarketPriceRecordDto } from '../services/ghostfolio-connector'

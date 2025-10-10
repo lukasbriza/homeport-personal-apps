@@ -4,7 +4,7 @@ import { validate, validateOrReject } from 'class-validator'
 import puppeteer from 'puppeteer'
 
 import { WithLogger } from '../../classes/with-logger'
-import { ServiceLogMethod } from '../../decorators'
+import { ServiceLogMethod } from '../../loggers'
 import { ApiUrlConstructorService } from '../../services/api-url-constructor'
 import { axiosCallWrapper, axiosRetryCall, getValidationMessageFromErrorArray } from '../../utils'
 

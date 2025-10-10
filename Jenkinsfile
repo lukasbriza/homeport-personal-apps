@@ -78,6 +78,22 @@ pipeline {
             env.REDIS_PASSWORD = secrets["REDIS_PASSWORD"]
           }
 
+          if(env.PROJECT_NAME == "keycloak"){
+            env.KC_DB = secrets["KC_DB"]
+            env.KC_DB_PASSWORD = secrets["KC_DB_PASSWORD"]
+            env.KC_DB_USERNAME = secrets["KC_DB_USERNAME"]
+            env.KEYCLOAK_ADMIN = secrets["KEYCLOAK_ADMIN"]
+            env.KEYCLOAK_ADMIN_PASSWORD = secrets["KEYCLOAK_ADMIN_PASSWORD"]
+            env.KEYCLOAK_DB_DATABASE = secrets["KEYCLOAK_DB_DATABASE"]
+            env.KEYCLOAK_DB_PASSWORD = secrets["KEYCLOAK_DB_PASSWORD"]
+            env.KEYCLOAK_DB_USER = secrets["KEYCLOAK_DB_USER"]
+            env.KEYCLOAK_PORT_EXPORT = secrets["KEYCLOAK_PORT_EXPORT"]
+            env.KEYCLOAK_FRONTEND_URL = secrets["KEYCLOAK_FRONTEND_URL"]
+            env.KC_HOSTNAME_URL = secrets["KC_HOSTNAME_URL"]
+            env.KC_HOSTNAME_ADMIN_URL = secrets["KC_HOSTNAME_ADMIN_URL"]
+            env.HOST_KEYCLOAK_DATABASE_DATA_PATH = secrets["HOST_KEYCLOAK_DATABASE_DATA_PATH"]
+          }
+
           env.COMPOSE_FILE_NAME = "apps/${env.PROJECT_NAME}/docker-compose-${env.ENVIRONMENT}.yaml"
         }
       }
@@ -116,6 +132,10 @@ pipeline {
 
           if(env.PROJECT_NAME == "seafile"){
             runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_SEAFILE_DATA_PATH, env.HOST_SEAFILE_DB_DATA_PATH])
+          }
+          
+          if(env.PROJECT_NAME == "keycloak"){
+            runComposeFile(env.COMPOSE_FILE_NAME, [env.HOST_KEYCLOAK_DATABASE_DATA_PATH])
           }
         }
       }
@@ -218,6 +238,34 @@ pipeline {
               ]
             )
           }
+
+          if(env.PROJECT_NAME == "keycloak"){
+            deploy(
+              env.API_PROCESSOR_API,
+              env.PLATFORM,
+              env.PROJECT_NAME,
+              env.ENVIRONMENT,
+              "https://${env.GITHUB_URL}",
+              "lukasbriza",
+              env.GITHUB_PAT,
+              env.COMPOSE_FILE_NAME,
+              [
+                ["name": "KC_DB", "value": "${env.KC_DB}"],
+                ["name": "KC_DB_PASSWORD", "value": "${env.KC_DB_PASSWORD}"],
+                ["name": "KC_DB_USERNAME", "value": "${env.KC_DB_USERNAME}"],
+                ["name": "KEYCLOAK_ADMIN", "value": "${env.KEYCLOAK_ADMIN}"],
+                ["name": "KEYCLOAK_ADMIN_PASSWORD", "value": "${env.KEYCLOAK_ADMIN_PASSWORD}"],
+                ["name": "KEYCLOAK_DB_DATABASE", "value": "${env.KEYCLOAK_DB_DATABASE}"],
+                ["name": "KEYCLOAK_DB_PASSWORD", "value": "${env.KEYCLOAK_DB_PASSWORD}"],
+                ["name": "KEYCLOAK_DB_USER", "value": "${env.KEYCLOAK_DB_USER}"],
+                ["name": "KEYCLOAK_PORT_EXPORT", "value": "${env.KEYCLOAK_PORT_EXPORT}"],
+                ["name": "KEYCLOAK_FRONTEND_URL", "value": "${env.KEYCLOAK_FRONTEND_URL}"],
+                ["name": "KC_HOSTNAME_URL", "value": "${env.KC_HOSTNAME_URL}"],
+                ["name": "KC_HOSTNAME_ADMIN_URL", "value": "${env.KC_HOSTNAME_ADMIN_URL}"],
+                ["name": "HOST_KEYCLOAK_DATABASE_DATA_PATH", "value": "${env.HOST_KEYCLOAK_DATABASE_DATA_PATH}"]
+              ]
+            )
+          }
         }
       }
     }
@@ -253,6 +301,10 @@ pipeline {
         if(env.PROJECT_NAME == "seafile"){
           utils.recursiveRemoveDir(env.HOST_SEAFILE_DATA_PATH)
           utils.recursiveRemoveDir(env.HOST_SEAFILE_DB_DATA_PATH)
+        }
+
+        if(env.PROJECT_NAME == "keycloak"){
+          utils.recursiveRemoveDir(env.HOST_KEYCLOAK_DATABASE_DATA_PATH)
         }
       }
     }

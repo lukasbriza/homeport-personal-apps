@@ -3,7 +3,7 @@ import axios, { AxiosResponse } from 'axios'
 import { validate } from 'class-validator'
 
 import { WithLogger } from '../../classes/with-logger'
-import { ServiceLogMethod } from '../../decorators'
+import { ServiceLogMethod } from '../../loggers'
 import { ApiUrlConstructorService } from '../../services/api-url-constructor'
 import { axiosCallWrapper, axiosRetryCall, getValidationMessageFromErrorArray } from '../../utils'
 

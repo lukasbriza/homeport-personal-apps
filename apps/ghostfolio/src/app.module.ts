@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 
 import { ApiModule } from './api/api.module'
+import { AuthModule } from './auth'
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { ApiModule } from './api/api.module'
       cache: true,
       ignoreEnvFile: process.env.NODE_ENV === 'production',
     }),
+    AuthModule,
     ApiModule,
   ],
   controllers: [],

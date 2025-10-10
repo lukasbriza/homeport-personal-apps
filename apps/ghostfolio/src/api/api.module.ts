@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common'
 
+import { AuthModule } from '../auth'
 import { CountryCodesScraperModule } from '../scrapers/country-codes'
 import { EicScraperModule } from '../scrapers/eic'
 import { JustEtfScraperModule } from '../scrapers/just-etf'
@@ -11,6 +12,7 @@ import { ApiService } from './api.service'
 
 @Module({
   imports: [
+    AuthModule,
     EicScraperModule,
     JustEtfScraperModule,
     GhostfolioConnectorModule,
