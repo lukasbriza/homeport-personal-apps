@@ -1,0 +1,34 @@
+{
+  "name": "@lukasbriza/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist tsconfig.build.tsbuildinfo",
+    "build": "tsc --build tsconfig.build.json",
+    "cleanup": "rimraf .eslintcache .turbo tsconfig.tsbuildinfo tsconfig.build.tsbuildinfo coverage dist node_modules",
+    "dev": "pnpm run build --watch",
+    "fix": "run-p ts format:fix lint:fix",
+    "format": "prettier --check \"./**/*.{json,md,mdx}\"",
+    "format:fix": "pnpm run format --write",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix",
+    "ts": "tsc --build tsconfig.json"
+  },
+  "devDependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@types/node": "22.20.1"
+  }
+}

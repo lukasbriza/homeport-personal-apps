@@ -1,0 +1,65 @@
+# Safe defaults — equivalent of .env.local. Real/prod values go in
+# values-prod.yaml — see values-prod.example.yaml. Both files are committed
+# (GitOps: ArgoCD reads them straight from git); nothing here is a secret —
+# real credentials come from Infisical (or the adminPassword/dbPassword
+# fallback below, only used when infisical.enabled is false).
+
+image:
+  repository: lbriza/keycloak
+  # Bumped automatically by .github/workflows/keycloak-build-push.yml on
+  # every keycloak-v* tag push — don't hand-edit this in normal use.
+  tag: keycloak-v1.0.0
+
+replicas: 1
+
+adminUsername: admin
+
+# Only used when infisical.enabled is false — never set real values here.
+adminPassword: ""
+dbPassword: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# Keycloak's own Postgres — separate from any other app's, one StatefulSet
+# per release like infisical's chart. DB name/user are hardcoded to
+# "keycloak" in the templates (matches the old .env.local values); only the
+# password is configurable, via Infisical or dbPassword above.
+postgres:
+  image: postgres:14-alpine
+  storageClassName: local-path
+  storage: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+  host: ""
+
+# When enabled, KEYCLOAK_ADMIN_PASSWORD and the Postgres password come from
+# Infisical (via the Infisical Kubernetes Operator) instead of the
+# adminPassword/dbPassword values above. Requires the cluster-wide
+# InfisicalConnection + InfisicalAuth to already be applied — see
+# homeport-infrastructure-apps/DEPLOYMENT.md, "Setup Infisical Kubernetes
+# Operator".
+infisical:
+  enabled: false
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: ""
+  environmentSlug: "prod"
+  secretPath: "/keycloak"

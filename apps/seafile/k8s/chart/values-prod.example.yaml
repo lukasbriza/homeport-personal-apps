@@ -1,0 +1,26 @@
+# Copy to values-prod.yaml (committed — see the note in values.yaml on why
+# this is safe; nothing here is a secret) and fill in real values.
+
+ingress:
+  enabled: true
+  host: "<domain>"
+  protocol: https
+
+# adminPassword / mysqlRootPassword / mysqlDbPassword / jwtPrivateKey /
+# redisPassword are NOT used below — infisical.enabled: true means all of
+# them come from your Homeport project instead. If you ever set
+# infisical.enabled back to false, uncomment these and set real values:
+# adminPassword: "replace-me"
+# mysqlRootPassword: "replace-me"
+# mysqlDbPassword: "replace-me"
+# jwtPrivateKey: "replace-me"
+# redisPassword: "replace-me"
+
+infisical:
+  enabled: true
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: "<infisical-project-id>" # Homeport project
+  environmentSlug: "<env-slug>"
+  secretPath: "/seafile"

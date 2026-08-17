@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-db
+  namespace: {{ .Release.Namespace }}
+spec:
+  clusterIP: None
+  selector:
+    app: {{ .Release.Name }}-db
+  ports:
+    - port: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-db
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: {{ .Release.Name }}-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-db
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-db
+    spec:
+      containers:
+        - name: mariadb
+          image: {{ .Values.mariadb.image }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_LOG_CONSOLE
+              value: "true"
+            - name: MARIADB_AUTO_UPGRADE
+              value: "1"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          resources:
+            {{- toYaml .Values.mariadb.resources | nindent 12 }}
+          # Same check compose used — the image ships this script.
+          readinessProbe:
+            exec:
+              command: ["/usr/local/bin/healthcheck.sh", "--connect", "--mariadbupgrade", "--innodb_initialized"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 6
+  # No helm.sh/resource-policy: keep annotation needed — Helm doesn't track
+  # volumeClaimTemplates the way it tracks standalone PVCs, so this already
+  # survives a `helm uninstall`.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.mariadb.storageClassName }}
+        resources:
+          requests:
+            storage: {{ .Values.mariadb.storage }}

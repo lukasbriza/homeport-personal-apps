@@ -1,0 +1,6 @@
+apiVersion: v2
+name: homer
+description: Homer dashboard for homeport
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,7 @@
+node_modules
+/build
+/.react-router
+.eslintcache
+*.tsbuildinfo
+.env
+.env.local

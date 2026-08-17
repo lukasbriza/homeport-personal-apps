@@ -1,0 +1,49 @@
+{
+  "name": "@lukasbriza/storybook",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "prebuild": "rimraf storybook-static tsconfig.tsbuildinfo",
+    "build": "storybook build --config-dir config",
+    "postbuild": "cpy serve.json storybook-static",
+    "cleanup": "rimraf .eslintcache .turbo storybook-static tsconfig.tsbuildinfo node_modules",
+    "dev": "storybook dev --config-dir config --port 6006",
+    "fix": "run-p ts format:fix lint:fix",
+    "format": "prettier --check \"./**/*.{json,md}\"",
+    "format:fix": "pnpm run format --write",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix",
+    "start": "serve storybook-static -p 6006",
+    "ts": "tsc --build tsconfig.json"
+  },
+  "dependencies": {
+    "@babel/core": "7.24.7",
+    "@babel/preset-env": "7.24.7",
+    "@babel/preset-react": "7.24.7",
+    "@babel/preset-typescript": "7.24.7",
+    "@emotion/babel-plugin": "11.13.5",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@storybook/addon-links": "10.4.6",
+    "@storybook/react-vite": "10.4.6",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.3",
+    "babel-plugin-react-docgen": "4.2.1",
+    "prop-types": "15.8.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "serve": "14.2.6",
+    "storybook": "10.4.6",
+    "typescript": "5.9.3",
+    "vite": "8.1.4"
+  },
+  "devDependencies": {
+    "@storybook/addon-docs": "10.4.6",
+    "eslint-plugin-storybook": "10.4.6"
+  }
+}

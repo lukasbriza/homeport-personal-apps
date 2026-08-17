@@ -14,7 +14,7 @@
     "fix": "run-p ts format:fix lint:fix",
     "format": "prettier --check --ignore-path .prettierignore \"./**/*.{graphql,json,md}\"",
     "format:fix": "pnpm run format --write",
-    "lint": "eslint --cache --ext cjs,js,ts .",
+    "lint": "eslint --cache .",
     "lint:fix": "pnpm run lint --fix",
     "start": "NODE_ENV=production node build/main",
     "test": "jest",

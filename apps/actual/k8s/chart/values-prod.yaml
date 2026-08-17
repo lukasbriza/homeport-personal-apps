@@ -1,0 +1,6 @@
+# Real values — committed, see the note in values.yaml on why this is safe
+# (no secrets live here).
+
+ingress:
+  enabled: true
+  host: "budgetmanager.lukasbriza.eu"

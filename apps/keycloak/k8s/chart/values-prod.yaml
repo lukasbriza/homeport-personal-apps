@@ -1,0 +1,15 @@
+# Real values — committed, see the note in values.yaml on why this is safe
+# (no secrets live here; those come from Infisical).
+
+ingress:
+  enabled: true
+  host: "auth.lukasbriza.eu"
+
+infisical:
+  enabled: true
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: "701566fc-6192-4ca5-b01b-b9e5a4c31214" # Homeport project
+  environmentSlug: "prod"
+  secretPath: "/keycloak"

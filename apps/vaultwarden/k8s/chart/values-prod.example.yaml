@@ -1,0 +1,21 @@
+# Copy to values-prod.yaml (gitignored, see ../../.gitignore) and fill in real values.
+
+domain: "https://<domain>"
+
+ingress:
+  enabled: true
+  host: "<domain>"
+
+# adminToken is NOT used below — infisical.enabled: true means ADMIN_TOKEN comes from
+# your Homeport project instead. If you ever set infisical.enabled back to false,
+# uncomment this and set a real value:
+# adminToken: "replace-me"
+
+infisical:
+  enabled: true
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: "<infisical-project-id>" # Homeport project
+  environmentSlug: "<env-slug>"
+  secretPath: "<folder-where-are-secrets-for-project>"

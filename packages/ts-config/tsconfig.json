@@ -1,1 +1,1 @@
-{ "extends": "./base", "files": [".eslintrc.cjs", "lint-staged.config.js"], "references": [] }
+{ "extends": "./base", "files": ["lint-staged.config.js"], "references": [] }

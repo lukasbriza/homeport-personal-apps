@@ -1,0 +1,73 @@
+# Builds + pushes keycloak's image, then bumps the tag in the Helm chart's
+# values.yaml and commits that change onto the tracked branch — ArgoCD picks
+# up the new commit and redeploys. This is the whole GitOps loop: this
+# workflow never touches the cluster directly.
+#
+# Triggered by a version tag (keycloak-v1.2.3), not by every push to the
+# Dockerfile — creating the tag is the deliberate "release this" moment.
+# Same convention as homeport-infrastructure-apps/.github/workflows/infisical-build-push.yml
+# (first time it's used in this repo).
+#
+# NOTE: the tracked branch below is feat/kubernetes-migration to match where
+# this work currently lives. Update it to master (or whatever the long-term
+# branch is) once this lands there — see the ArgoCD Application's
+# targetRevision too.
+name: Build and push keycloak image
+
+on:
+  push:
+    tags:
+      - "keycloak-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: vars
+        run: echo "version=${GITHUB_REF_NAME#keycloak-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/keycloak
+          file: apps/keycloak/Dockerfile
+          push: true
+          tags: lbriza/keycloak:keycloak-v${{ steps.vars.outputs.version }}
+
+      - name: Bump image tag in Helm values
+        run: |
+          sed -i "s/tag: keycloak-v.*/tag: keycloak-v${{ steps.vars.outputs.version }}/" apps/keycloak/k8s/chart/values.yaml
+
+      - name: Commit and push updated values
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # A tag checkout leaves us in detached HEAD — switch to the branch
+          # ArgoCD actually tracks before committing the bump.
+          git fetch origin feat/kubernetes-migration
+          git checkout feat/kubernetes-migration
+          git add apps/keycloak/k8s/chart/values.yaml
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: bump keycloak image to v${{ steps.vars.outputs.version }}"
+          # Branch may have moved since checkout (someone pushing manually
+          # mid-build) — rebase onto the latest before pushing, retrying a
+          # couple times in case of a tight race.
+          for i in 1 2 3; do
+            git push origin feat/kubernetes-migration && break
+            echo "push rejected, rebasing onto latest and retrying ($i/3)"
+            git fetch origin feat/kubernetes-migration
+            git rebase origin/feat/kubernetes-migration
+            sleep 2
+          done

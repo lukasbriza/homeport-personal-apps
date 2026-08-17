@@ -1,0 +1,135 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.infisical.enabled }}
+  annotations:
+    # Operator does a rolling restart of this Deployment whenever the managed
+    # secret (see infisical-static-secret.yaml) changes — no manual redeploy.
+    secrets.infisical.com/auto-reload: "true"
+  {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: seafile
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: SEAFILE_MYSQL_DB_HOST
+              value: "{{ .Release.Name }}-db"
+            - name: SEAFILE_MYSQL_DB_PORT
+              value: "3306"
+            - name: SEAFILE_MYSQL_DB_USER
+              value: seafile
+            - name: INIT_SEAFILE_MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: SEAFILE_MYSQL_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: MYSQL_DB_PASSWORD
+            - name: SEAFILE_MYSQL_DB_CCNET_DB_NAME
+              value: ccnet_db
+            - name: SEAFILE_MYSQL_DB_SEAFILE_DB_NAME
+              value: seafile_db
+            - name: SEAFILE_MYSQL_DB_SEAHUB_DB_NAME
+              value: seahub_db
+            - name: TIME_ZONE
+              value: "Etc/UTC"
+            - name: INIT_SEAFILE_ADMIN_EMAIL
+              value: {{ .Values.adminEmail | quote }}
+            - name: INIT_SEAFILE_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: ADMIN_PASSWORD
+            - name: SEAFILE_SERVER_HOSTNAME
+              value: {{ .Values.ingress.host | quote }}
+            - name: SEAFILE_SERVER_PROTOCOL
+              value: {{ .Values.ingress.protocol | quote }}
+            - name: SITE_ROOT
+              value: "/"
+            - name: NON_ROOT
+              value: "false"
+            - name: JWT_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: JWT_PRIVATE_KEY
+            # Deviates from compose's "false" — in k8s, stdout is how
+            # `kubectl logs` sees anything, so this needs to be true here.
+            - name: SEAFILE_LOG_TO_STDOUT
+              value: "true"
+            - name: ENABLE_SEADOC
+              value: "false"
+            - name: SEADOC_SERVER_URL
+              value: "{{ .Values.ingress.protocol }}://{{ .Values.ingress.host }}/sdoc-server"
+            - name: CACHE_PROVIDER
+              value: redis
+            - name: REDIS_HOST
+              value: "{{ .Release.Name }}-redis"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: REDIS_PASSWORD
+            - name: MEMCACHED_HOST
+              value: "{{ .Release.Name }}-memcached"
+            - name: MEMCACHED_PORT
+              value: "11211"
+            # Notification/AI features are disabled below — these URLs are
+            # unreachable placeholders matching compose's own defaults,
+            # harmless while ENABLE_NOTIFICATION_SERVER/ENABLE_SEAFILE_AI
+            # stay false.
+            - name: ENABLE_NOTIFICATION_SERVER
+              value: "false"
+            - name: INNER_NOTIFICATION_SERVER_URL
+              value: "http://notification-server:8083"
+            - name: NOTIFICATION_SERVER_URL
+              value: "{{ .Values.ingress.protocol }}://{{ .Values.ingress.host }}/notification"
+            - name: ENABLE_SEAFILE_AI
+              value: "false"
+            - name: SEAFILE_AI_SERVER_URL
+              value: "http://seafile-ai:8888"
+            - name: SEAFILE_AI_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: JWT_PRIVATE_KEY
+            - name: MD_FILE_COUNT_LIMIT
+              value: "100000"
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: data
+              mountPath: /shared
+          # Seafile's own init (DB bootstrap, migrations) can take a while on
+          # first boot — generous initialDelay avoids a crash-loop.
+          readinessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            httpGet: { path: /, port: 80 }
+            initialDelaySeconds: 60
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data

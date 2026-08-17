@@ -25,13 +25,13 @@
   "dependencies": {
     "@lukasbriza/eslint-config": "workspace:*",
     "@lukasbriza/ts-config": "workspace:*",
-    "prettier-plugin-packagejson": "^2.5.0"
+    "prettier-plugin-packagejson": "^3.0.2"
   },
   "devDependencies": {
-    "prettier": "3.3.2",
-    "typescript": "5.5.3"
+    "prettier": "3.9.4",
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
-    "prettier": "3.3.2"
+    "prettier": "3.9.4"
   }
 }

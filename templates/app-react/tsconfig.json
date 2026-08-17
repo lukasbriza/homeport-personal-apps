@@ -1,0 +1,12 @@
+{
+  "extends": "@lukasbriza/ts-config/react",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["./app/*"] },
+    "noEmit": true,
+    "rootDirs": [".", "./.react-router/types"],
+    "types": ["node", "vite/client"]
+  },
+  "include": ["app/**/*.ts", "app/**/*.tsx", "*.ts", ".react-router/types/**/*"],
+  "exclude": ["node_modules", "build"]
+}

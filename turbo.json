@@ -12,7 +12,7 @@
     },
     "lint:fix": {
       "dependsOn": ["^build"],
-      "outputs": [".eslintchache"]
+      "outputs": [".eslintcache"]
     },
     "dev": {
       "cache": false,

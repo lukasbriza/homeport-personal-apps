@@ -1,0 +1,47 @@
+{
+  "name": "@lukasbriza/mobile-template",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "ts": "tsc",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix"
+  },
+  "dependencies": {
+    "@emotion/native": "11.11.0",
+    "@emotion/react": "11.14.0",
+    "@lukasbriza/api": "workspace:*",
+    "@lukasbriza/tokens": "workspace:*",
+    "@tanstack/react-query": "5.101.2",
+    "expo": "~56.0.0",
+    "expo-constants": "~56.0.20",
+    "expo-linking": "~56.0.15",
+    "expo-router": "~56.2.14",
+    "expo-status-bar": "~56.0.4",
+    "expo-system-ui": "~56.0.5",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-native": "~0.85.0",
+    "react-native-gesture-handler": "~2.31.2",
+    "react-native-reanimated": "4.3.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "4.25.2",
+    "react-native-web": "^0.21.2",
+    "react-native-worklets": "0.8.3",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@react-native/metro-config": "0.85.3",
+    "@types/react": "19.2.17",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

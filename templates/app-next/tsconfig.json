@@ -1,0 +1,18 @@
+{
+  "extends": "@lukasbriza/ts-config/nextjs",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": { "@/*": ["src/*"] },
+    "plugins": [{ "name": "next" }]
+  },
+  "exclude": [".next", "node_modules", "public"],
+  "include": [
+    ".next/types/**/*.ts",
+    "next-env.d.ts",
+    "next.config.mjs",
+    "**/*.js",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "references": []
+}

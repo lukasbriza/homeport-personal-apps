@@ -1,0 +1,63 @@
+{
+  "name": "@lukasbriza/components",
+  "version": "0.0.0",
+  "private": true,
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "prebuild": "rimraf dist tsconfig.build.tsbuildinfo",
+    "build": "tsc --build tsconfig.build.json",
+    "cleanup": "rimraf .eslintcache .turbo tsconfig.tsbuildinfo tsconfig.build.tsbuildinfo coverage dist node_modules",
+    "dev": "pnpm run build --watch",
+    "fix": "run-p ts format:fix lint:fix",
+    "format": "prettier --check \"./**/*.{json,md,mdx}\"",
+    "format:fix": "pnpm run format --write",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix",
+    "ts": "tsc --build tsconfig.json"
+  },
+  "dependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/styles": "workspace:*",
+    "@lukasbriza/theme": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@mui/material": "9.2.0",
+    "@mui/system": "9.2.0",
+    "@mui/types": "9.1.1",
+    "@mui/utils": "9.2.0",
+    "clsx": "2.1.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.81.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.24.7",
+    "@babel/preset-env": "7.24.7",
+    "@babel/preset-react": "7.24.7",
+    "@babel/preset-typescript": "7.24.7",
+    "@storybook/addon-docs": "10.4.6",
+    "@storybook/react-vite": "10.4.6",
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/react": "16.3.2",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "storybook": "10.4.6",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
