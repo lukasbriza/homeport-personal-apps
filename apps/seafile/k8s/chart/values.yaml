@@ -1,0 +1,93 @@
+# Safe defaults — equivalent of .env.local. Real/prod values go in
+# values-prod.yaml — see values-prod.example.yaml. Both files are committed
+# (GitOps: ArgoCD reads them straight from git); nothing here is a secret —
+# real credentials come from Infisical (or the fallback values below, only
+# used when infisical.enabled is false).
+#
+# No GH Actions build workflow for this app — unlike keycloak/actual, none of
+# these images are wrapped by a local Dockerfile in this repo; seafile-mc,
+# mariadb, redis and memcached are all used directly from upstream. Bump the
+# tags below by hand when you want a new version.
+
+image:
+  repository: seafileltd/seafile-mc
+  tag: "13.0-latest"
+
+adminEmail: "me@example.com"
+# Only used when infisical.enabled is false — never set real values here.
+adminPassword: ""
+mysqlRootPassword: ""
+mysqlDbPassword: ""
+jwtPrivateKey: ""
+redisPassword: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+# Actual file storage — the big one. Size generously; this holds every synced
+# file, not just app state.
+persistence:
+  size: 50Gi
+  storageClassName: local-path
+
+mariadb:
+  image: mariadb:10.11
+  storageClassName: local-path
+  storage: 5Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+redis:
+  image: redis:7-alpine
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+# Referenced by both compose files (MEMCACHED_HOST=memcached) but never
+# actually defined as a service in either — added here as a real Deployment
+# instead of repeating that gap in k8s.
+memcached:
+  image: memcached:1.6-alpine
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 250m
+      memory: 64Mi
+
+service:
+  port: 80
+
+ingress:
+  enabled: false
+  host: ""
+  protocol: https
+
+# When enabled, admin/DB/Redis/JWT credentials come from Infisical (via the
+# Infisical Kubernetes Operator) instead of the fallback values above.
+# Requires the cluster-wide InfisicalConnection + InfisicalAuth to already be
+# applied — see homeport-infrastructure-apps/DEPLOYMENT.md, "Setup Infisical
+# Kubernetes Operator".
+infisical:
+  enabled: false
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: ""
+  environmentSlug: "prod"
+  secretPath: "/seafile"

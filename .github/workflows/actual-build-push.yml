@@ -1,0 +1,67 @@
+# Builds + pushes actual's image, then bumps the tag in the Helm chart's
+# values.yaml and commits that change onto the tracked branch — ArgoCD picks
+# up the new commit and redeploys. This is the whole GitOps loop: this
+# workflow never touches the cluster directly.
+#
+# Triggered by a version tag (actual-v1.2.3), not by every push to the
+# Dockerfile — creating the tag is the deliberate "release this" moment.
+# Same convention as keycloak-build-push.yml / infisical-build-push.yml.
+name: Build and push actual image
+
+on:
+  push:
+    tags:
+      - "actual-v*"
+  workflow_dispatch: {}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: vars
+        run: echo "version=${GITHUB_REF_NAME#actual-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/actual
+          file: apps/actual/Dockerfile
+          push: true
+          tags: lbriza/actual:actual-v${{ steps.vars.outputs.version }}
+
+      - name: Bump image tag in Helm values
+        run: |
+          sed -i "s/tag: actual-v.*/tag: actual-v${{ steps.vars.outputs.version }}/" apps/actual/k8s/chart/values.yaml
+
+      - name: Commit and push updated values
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # A tag checkout leaves us in detached HEAD — switch to the branch
+          # ArgoCD actually tracks before committing the bump.
+          git fetch origin master
+          git checkout master
+          git add apps/actual/k8s/chart/values.yaml
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: bump actual image to v${{ steps.vars.outputs.version }}"
+          # Branch may have moved since checkout (someone pushing manually
+          # mid-build) — rebase onto the latest before pushing, retrying a
+          # couple times in case of a tight race.
+          for i in 1 2 3; do
+            git push origin master && break
+            echo "push rejected, rebasing onto latest and retrying ($i/3)"
+            git fetch origin master
+            git rebase origin/master
+            sleep 2
+          done

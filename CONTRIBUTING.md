@@ -2,20 +2,12 @@
 
 ## 📦 Repository Structure & Tooling
 
-This repository includes a suite of universal Dockerfiles and a custom CLI tool designed to streamline development and deployment.
+Each `apps/<name>/` folder colocates its Dockerfile (if any), its
+`docker-compose-local.yaml` for local dev, and its `k8s/chart/` Helm chart. All
+apps here are Docker/Helm config around third-party images — none has application
+source to lint or build via `turbo`.
 
-To launch the CLI, run the following command from the root of the repository:
-
-```bash
-pnpm run cli
-```
-
-With this CLI, you can:
-
-- Fetch the latest Dockerfiles from the inherited repository
-- Update the CLI tool itself
-
-Please ensure you're working with the latest version of both before committing updates.
+See `DEPLOYMENT.md` for how an app's chart actually gets deployed and updated.
 
 ---
 
@@ -29,13 +21,30 @@ All applications and packages **must be covered by tests**, as long as it makes 
 
 ## 🚀 Deployment Structure
 
-Deployment is configured using two distinct Docker Compose files:
+Everything here runs on **Kubernetes (k3s)** via Helm charts in each app's
+`k8s/chart/`. `docker-compose-local.yaml` still exists per app for local dev
+before/alongside k3s. There's no shared prod compose file — the ArgoCD
+`Application` manifests that deploy these charts live in
+`homeport-infrastructure-apps/infrastructure/argocd/k8s/applications/`, not in
+this repo. See `DEPLOYMENT.md` for the full loop.
 
-- `docker-compose-local.yaml` - for local testing without need of exhausting .env configuration
-- `docker-compose-test.yaml` – for testing and QA environments
-- `docker-compose-prod.yaml` – for production deployments
+---
 
-Ensure your changes support both environments or clearly specify if they are intended for only one.
+## 🏷️ Releasing app images
+
+Apps with a local Dockerfile (`actual`, `keycloak`, `seafile`) release on a
+version tag, not on every push:
+
+```bash
+git tag <app>-v<version>   # e.g. actual-v1.1.0
+git push origin <app>-v<version>
+```
+
+This builds the image, pushes it to Docker Hub, and commits the bumped tag into
+that app's `values.yaml` — ArgoCD picks it up from there. See
+`.github/workflows/actual-build-push.yml` for a working example. Apps using an
+upstream image unmodified (`homer`, `vaultwarden`) have no workflow — bump the
+tag in `values.yaml` by hand.
 
 ---
 
@@ -46,8 +55,8 @@ We follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0
 **Examples:**
 
 ```
-feat(cli): add update command for Dockerfiles
-fix(api): resolve crash when fetching empty payload
+feat(seafile): add memcached service
+fix(actual): disable service-link env injection
 chore(deps): upgrade pnpm to latest version
 ```
 

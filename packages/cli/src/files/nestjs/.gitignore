@@ -1,4 +1,0 @@
-/**/*.generated.ts
-/prisma/**/generated
-/schema.graphql
-/tyr.schema.graphql

@@ -1,0 +1,43 @@
+{
+  "name": "@lukasbriza/react-template",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "react-router dev",
+    "build": "react-router build",
+    "start": "react-router-serve ./build/server/index.js",
+    "ts": "react-router typegen && tsc",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix"
+  },
+  "dependencies": {
+    "@emotion/cache": "11.14.0",
+    "@emotion/is-prop-valid": "1.4.0",
+    "@emotion/react": "11.14.0",
+    "@emotion/server": "11.11.0",
+    "@emotion/styled": "11.14.1",
+    "@lukasbriza/api": "workspace:*",
+    "@react-router/node": "8.2.0",
+    "@react-router/serve": "8.2.0",
+    "@tanstack/react-query": "5.101.2",
+    "@tanstack/react-query-devtools": "5.101.2",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-router": "8.2.0",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@react-router/dev": "8.2.0",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "typescript": "5.9.3",
+    "vite": "8.1.4"
+  },
+  "engines": {
+    "node": ">=22.22.0"
+  }
+}

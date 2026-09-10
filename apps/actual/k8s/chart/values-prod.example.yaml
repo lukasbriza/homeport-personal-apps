@@ -1,0 +1,6 @@
+# Copy to values-prod.yaml (committed — see the note in values.yaml on why
+# this is safe; nothing here is a secret) and fill in real values.
+
+ingress:
+  enabled: true
+  host: "<domain>"

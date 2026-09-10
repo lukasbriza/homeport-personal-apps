@@ -1,0 +1,39 @@
+import { Meta, Title } from '@storybook/addon-docs/blocks'
+
+import { ThemeProvider } from '../src/theme'
+
+import { BodyText, Headings } from './typography'
+
+<Meta title="Typography" />
+<Title>Typography</Title>
+
+## Available variants
+
+<br />
+<br />
+
+### Headings
+
+**Font:** JetBrains Mono
+
+**Weights:** 400 (regular), 500 (medium), 700 (bold)
+
+> NOTE: There are mobile variants for **h1**, **h2** and **h3** as well.
+
+<br />
+<br />
+<ThemeProvider>
+  <Headings />
+</ThemeProvider>
+
+### Body text
+
+**Font:** Poppins
+
+**Weights:** 400 (regular), 500 (medium), 700 (bold)
+
+<br />
+<br />
+<ThemeProvider>
+  <BodyText />
+</ThemeProvider>

@@ -1,0 +1,103 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Cat Facts API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/breeds": {
+      "get": {
+        "tags": ["Breeds"],
+        "summary": "Get a list of breeds",
+        "description": "Returns a a list of breeds",
+        "operationId": "getBreeds",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "limit the amount of results returned",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Breed"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Breed": {
+        "title": "Breed model",
+        "description": "Breed",
+        "properties": {
+          "breed": {
+            "title": "Breed",
+            "description": "Breed",
+            "type": "string",
+            "format": "string"
+          },
+          "country": {
+            "title": "Country",
+            "description": "Country",
+            "type": "string",
+            "format": "string"
+          },
+          "origin": {
+            "title": "Origin",
+            "description": "Origin",
+            "type": "string",
+            "format": "string"
+          },
+          "coat": {
+            "title": "Coat",
+            "description": "Coat",
+            "type": "string",
+            "format": "string"
+          },
+          "pattern": {
+            "title": "Pattern",
+            "description": "Pattern",
+            "type": "string",
+            "format": "string"
+          }
+        },
+        "type": "object"
+      },
+      "Error": {
+        "type": "object",
+        "required": ["code", "message"],
+        "properties": {
+          "code": { "type": "number" },
+          "message": { "type": "string" }
+        }
+      }
+    }
+  }
+}

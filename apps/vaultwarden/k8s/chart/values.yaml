@@ -1,0 +1,49 @@
+# Safe defaults — equivalent of .env.local (committed, no secrets).
+# Real/prod values (incl. adminToken) go in values-prod.yaml, which is gitignored —
+# see values-prod.example.yaml for the template. Equivalent of .env in the compose setup.
+
+image:
+  repository: vaultwarden/server
+  tag: latest
+
+domain: "http://localhost"
+
+# Never set a real token here. Empty by default so it's obvious if someone forgets
+# to pass -f values-prod.yaml.
+adminToken: ""
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  size: 2Gi
+  storageClassName: local-path
+
+service:
+  port: 80
+  type: ClusterIP
+  # nodePort: 30080  # only used when type: NodePort
+
+ingress:
+  enabled: false
+  host: ""
+
+# When enabled, ADMIN_TOKEN comes from Infisical (via the Infisical Kubernetes Operator)
+# instead of the adminToken value above. Requires the cluster-wide InfisicalConnection +
+# InfisicalAuth to already be applied — see homeport-architecture-apps/DEPLOYMENT.md,
+# "Setup Infisical Kubernetes Operator".
+infisical:
+  enabled: false
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: ""
+  environmentSlug: "prod"
+  secretPath: "/vaultwarden"

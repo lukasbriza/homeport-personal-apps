@@ -1,0 +1,31 @@
+# Development environment — one consistent Linux toolchain to develop against,
+# whatever the host OS. Driven by the `docker:*` scripts in the root package.json;
+# there is deliberately no .devcontainer — you stay in your own editor and just run
+# commands against this container, with output streaming to your terminal.
+#
+# Paths below are relative to THIS file, so `../..` is the repo root.
+name: monorepo-template-dev
+
+services:
+  dev:
+    build:
+      context: ../..
+      dockerfile: docker/dev/Dockerfile
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    volumes:
+      # The repo itself — edits on the host are visible inside immediately.
+      - ../..:/workspace
+      # node_modules + the pnpm store live on named volumes: fast, and host-OS
+      # binaries never mix with the Linux ones.
+      - node_modules:/workspace/node_modules
+      - pnpm-store:/home/node/.pnpm-store
+    ports:
+      - '3000:3000' # Next.js / NestJS
+      - '5173:5173' # Vite (React Router)
+      - '6006:6006' # Storybook
+
+volumes:
+  node_modules:
+  pnpm-store:

@@ -1,0 +1,5 @@
+# Copy to values-prod.yaml (gitignored) and fill in the real domain.
+
+ingress:
+  enabled: true
+  host: "<domain>"

@@ -1,0 +1,28 @@
+# Safe defaults — equivalent of .env.local. Real/prod values go in values-prod.yaml
+# — see values-prod.example.yaml. Both files are committed (GitOps: ArgoCD reads
+# them straight from git); nothing in here is a secret — homer has no auth.
+
+image:
+  repository: b4bz/homer
+  tag: latest
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 25m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+persistence:
+  size: 500Mi
+  storageClassName: local-path
+
+service:
+  port: 8080
+
+ingress:
+  enabled: false
+  host: ""

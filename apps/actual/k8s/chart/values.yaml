@@ -1,0 +1,32 @@
+# Safe defaults — equivalent of .env.local. Real/prod values go in
+# values-prod.yaml — see values-prod.example.yaml. Both files are committed
+# (GitOps: ArgoCD reads them straight from git); nothing here is a secret —
+# actual-server has no auth env vars, it manages its own login inside the
+# app data itself (set up on first run).
+
+image:
+  repository: lbriza/actual
+  # Bumped automatically by .github/workflows/actual-build-push.yml on every
+  # actual-v* tag push — don't hand-edit this in normal use.
+  tag: actual-v1.0.0
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  size: 1Gi
+  storageClassName: local-path
+
+service:
+  port: 5006
+
+ingress:
+  enabled: false
+  host: ""

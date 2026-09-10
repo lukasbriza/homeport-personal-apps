@@ -1,0 +1,10 @@
+/**/*.generated.ts
+/prisma/**/generated
+/src/modules/prisma/generated
+/schema.graphql
+/tyr.schema.graphql
+
+# env
+.env
+.env.*
+!.env.example

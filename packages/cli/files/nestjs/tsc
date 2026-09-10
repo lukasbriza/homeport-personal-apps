@@ -1,8 +1,0 @@
-{
-  "extends": "@lukasbriza/ts-config/nestjs",
-  "include": [".eslintrc.cjs", "**/*.js", "**/*.mjs", "**/*.ts"],
-  "exclude": ["build", "node_modules", "lint-staged.config.mjs"],
-  "ts-node": { "transpileOnly": true },
-  "references": [],
-  "compilerOptions": { "experimentalDecorators": true, "sourceMap": true }
-}

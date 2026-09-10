@@ -1,6 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": { "noEmit": false, "outDir": "./build", "rootDir": "./src" },
-  "include": ["./src"],
-  "references": []
-}

@@ -1,0 +1,44 @@
+{
+  "name": "@lukasbriza/next-template",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "lint": "eslint --cache .",
+    "lint:fix": "pnpm run lint --fix",
+    "start": "next start -p 3000"
+  },
+  "dependencies": {
+    "@emotion/cache": "11.14.0",
+    "@emotion/is-prop-valid": "1.4.0",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "@hookform/resolvers": "5.4.0",
+    "@lukasbriza/api": "workspace:*",
+    "@tanstack/react-query": "5.101.2",
+    "@tanstack/react-query-devtools": "5.101.2",
+    "next": "16.2.10",
+    "next-international": "1.3.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
+    "react-hook-form": "7.81.0",
+    "usehooks-ts": "3.1.1",
+    "yup": "1.7.1",
+    "zustand": "5.0.14"
+  },
+  "devDependencies": {
+    "@lukasbriza/eslint-config": "workspace:*",
+    "@lukasbriza/ts-config": "workspace:*",
+    "@types/node": "22.20.1",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "tsx": "4.23.0",
+    "typescript": "5.9.3"
+  },
+  "packageManager": "pnpm@9.4.0+sha512.f549b8a52c9d2b8536762f99c0722205efc5af913e77835dbccc3b0b0b2ca9e7dc8022b78062c17291c48e88749c70ce88eb5a74f1fa8c4bf5e18bb46c8bd83a",
+  "engines": {
+    "node": ">=22"
+  }
+}
