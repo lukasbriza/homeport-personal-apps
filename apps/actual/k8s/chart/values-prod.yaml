@@ -4,3 +4,6 @@
 ingress:
   enabled: true
   host: "budgetmanager.lukasbriza.eu"
+
+scaleToZero:
+  enabled: true

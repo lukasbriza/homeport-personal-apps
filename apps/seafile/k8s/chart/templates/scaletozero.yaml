@@ -1,0 +1,41 @@
+{{- if .Values.scaleToZero.enabled }}
+# Tells the interceptor which requests belong to this app and what metric to
+# report back to KEDA. Current KEDA HTTP Add-on API (InterceptorRoute +
+# ScaledObject) — the older single HTTPScaledObject CRD is deprecated.
+apiVersion: http.keda.sh/v1beta1
+kind: InterceptorRoute
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  target:
+    service: {{ .Release.Name }}
+    port: {{ .Values.service.port }}
+  rules:
+    - hosts: [{{ .Values.ingress.host | quote }}]
+  scalingMetric:
+    requestRate:
+      targetValue: {{ .Values.scaleToZero.targetRequestRate }}
+      window: {{ .Values.scaleToZero.window }}
+      granularity: 1s
+---
+# The actual autoscaler — scales this app's own Deployment (same name as the
+# Release, per deployment.yaml) between 0 and maxReplicas based on the request
+# rate the interceptor reports via the HTTP Add-on's external scaler.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  scaleTargetRef:
+    name: {{ .Release.Name }}
+  minReplicaCount: {{ .Values.scaleToZero.minReplicas }}
+  maxReplicaCount: {{ .Values.scaleToZero.maxReplicas }}
+  cooldownPeriod: {{ .Values.scaleToZero.cooldownPeriod }}
+  triggers:
+    - type: external-push
+      metadata:
+        scalerAddress: keda-add-ons-http-external-scaler.keda:9090
+        interceptorRoute: {{ .Release.Name }}
+{{- end }}

@@ -1,3 +1,6 @@
 ingress:
   enabled: true
   host: "lukasbriza.eu"
+
+scaleToZero:
+  enabled: true

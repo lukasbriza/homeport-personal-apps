@@ -1,0 +1,16 @@
+{{- if .Values.scaleToZero.enabled }}
+# Cross-namespace indirection — a standard Ingress backend can't reference a
+# Service in another namespace directly, so this ExternalName Service in our
+# own namespace resolves to the KEDA HTTP Add-on's interceptor proxy in the
+# keda namespace. Traefik follows it like any other backend.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-keda-proxy
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ExternalName
+  externalName: keda-add-ons-http-interceptor-proxy.keda.svc.cluster.local
+  ports:
+    - port: 8080
+{{- end }}

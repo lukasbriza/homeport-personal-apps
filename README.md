@@ -6,10 +6,12 @@ k3s cluster set up in `homeport-infrastructure-apps`.
 ## 🧭 Overview
 
 - **actual** — Personal finances manager
+- **donetick** — Task/chore manager
 - **homer** — Homepage/dashboard
 - **keycloak** — Identity and access management
 - **seafile** — File sync and sharing
 - **vaultwarden** — Password manager
+- **wishlist** — Gift wishlist manager
 
 ## Structure
 

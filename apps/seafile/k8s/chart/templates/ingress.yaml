@@ -17,7 +17,18 @@ spec:
             pathType: Prefix
             backend:
               service:
+                {{- if .Values.scaleToZero.enabled }}
+                # Routes through the KEDA HTTP Add-on interceptor instead of
+                # straight to this app's own Service — see keda-proxy.yaml.
+                # It holds the request, wakes the app via the
+                # InterceptorRoute/ScaledObject pair in scaletozero.yaml, then
+                # forwards it once the pod is ready.
+                name: {{ .Release.Name }}-keda-proxy
+                port:
+                  number: 8080
+                {{- else }}
                 name: {{ .Release.Name }}
                 port:
                   number: {{ .Values.service.port }}
+                {{- end }}
 {{- end }}
