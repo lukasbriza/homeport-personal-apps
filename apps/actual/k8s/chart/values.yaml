@@ -30,3 +30,17 @@ service:
 ingress:
   enabled: false
   host: ""
+
+# Scale-to-zero via KEDA's HTTP Add-on — see homeport-infrastructure-apps
+# DEPLOYMENT.md, "Opting an app into scale-to-zero". Requires KEDA + the HTTP
+# Add-on already installed on the cluster (core/keda there). Off by default —
+# flip to true only after confirming the cluster-wide install works.
+scaleToZero:
+  enabled: false
+  minReplicas: 0
+  maxReplicas: 1
+  # How long with no matching requests before scaling back down to 0.
+  cooldownPeriod: 300
+  # Requests/second (averaged over the window below) that justifies scaling up.
+  targetRequestRate: 5
+  window: 1m

@@ -1,0 +1,68 @@
+# Safe defaults — equivalent of .env.local (committed, no secrets). Real/prod values
+# go in values-prod.yaml — see values-prod.example.yaml. The JWT signing secret
+# (DT_JWT_SECRET) is the one sensitive value and comes from Infisical, same pattern
+# as vaultwarden's ADMIN_TOKEN.
+
+image:
+  repository: donetick/donetick
+  tag: latest
+
+# Hostname (no scheme) Donetick reports itself as — env var DT_SERVER_PUBLIC_HOST.
+publicHost: "localhost"
+timezone: "Europe/Prague"
+
+# Never set a real value here. Empty by default so it's obvious if someone forgets
+# to pass -f values-prod.yaml or enable Infisical.
+jwtSecret: ""
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+persistence:
+  size: 1Gi
+  storageClassName: local-path
+
+service:
+  port: 2021
+
+ingress:
+  enabled: false
+  host: ""
+
+# When enabled, DT_JWT_SECRET comes from Infisical (via the Infisical Kubernetes
+# Operator) instead of the jwtSecret value above. Requires the cluster-wide
+# InfisicalConnection + InfisicalAuth to already be applied — see
+# homeport-architecture-apps/DEPLOYMENT.md, "Setup Infisical Kubernetes Operator".
+infisical:
+  enabled: false
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: ""
+  environmentSlug: "prod"
+  secretPath: "/donetick"
+
+# Scale-to-zero via KEDA's HTTP Add-on — see homeport-infrastructure-apps
+# DEPLOYMENT.md, "Opting an app into scale-to-zero". Requires KEDA + the HTTP
+# Add-on already installed on the cluster (core/keda there). Off by default —
+# flip to true only after confirming the cluster-wide install works.
+#
+# Donetick's realtime/SSE features keep connections open, which can make the
+# app look continuously active and prevent the cooldown from ever firing —
+# verify actual idle behavior before relying on this in practice.
+scaleToZero:
+  enabled: false
+  minReplicas: 0
+  maxReplicas: 1
+  # How long with no matching requests before scaling back down to 0.
+  cooldownPeriod: 300
+  # Requests/second (averaged over the window below) that justifies scaling up.
+  targetRequestRate: 5
+  window: 1m

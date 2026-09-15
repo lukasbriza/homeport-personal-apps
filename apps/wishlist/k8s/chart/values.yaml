@@ -1,0 +1,52 @@
+# Safe defaults — equivalent of .env.local (committed, no secrets). Real/prod values
+# go in values-prod.yaml — see values-prod.example.yaml. Wishlist has no required
+# auth secret of its own (accounts/sessions live in its bundled SQLite database),
+# so there's no Infisical wiring in this chart, unlike vaultwarden/keycloak/seafile.
+
+image:
+  repository: ghcr.io/cmintey/wishlist
+  tag: latest
+
+# Public URL users connect to — the container needs this to generate correct
+# absolute links (invites, password resets, image URLs).
+origin: "http://localhost:3280"
+
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Two separate volumes, matching the upstream image's two mount points.
+persistence:
+  data:
+    size: 500Mi
+    storageClassName: local-path
+  uploads:
+    size: 1Gi
+    storageClassName: local-path
+
+service:
+  port: 3280
+
+ingress:
+  enabled: false
+  host: ""
+
+# Scale-to-zero via KEDA's HTTP Add-on — see homeport-infrastructure-apps
+# DEPLOYMENT.md, "Opting an app into scale-to-zero". Requires KEDA + the HTTP
+# Add-on already installed on the cluster (core/keda there). Off by default —
+# flip to true only after confirming the cluster-wide install works.
+scaleToZero:
+  enabled: false
+  minReplicas: 0
+  maxReplicas: 1
+  # How long with no matching requests before scaling back down to 0.
+  cooldownPeriod: 300
+  # Requests/second (averaged over the window below) that justifies scaling up.
+  targetRequestRate: 5
+  window: 1m

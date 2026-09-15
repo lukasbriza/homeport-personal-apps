@@ -1,0 +1,21 @@
+# Copy to values-prod.yaml and fill in real values.
+
+publicHost: "<domain>"
+
+ingress:
+  enabled: true
+  host: "<domain>"
+
+# jwtSecret is NOT used below — infisical.enabled: true means DT_JWT_SECRET comes
+# from Infisical instead. If you ever set infisical.enabled back to false, uncomment
+# this and set a real value:
+# jwtSecret: "replace-me"
+
+infisical:
+  enabled: true
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: "<infisical-project-id>"
+  environmentSlug: "<env-slug>"
+  secretPath: "<folder-where-are-secrets-for-project>"

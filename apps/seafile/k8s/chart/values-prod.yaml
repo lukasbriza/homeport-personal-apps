@@ -14,3 +14,6 @@ infisical:
   projectId: "701566fc-6192-4ca5-b01b-b9e5a4c31214" # Homeport project
   environmentSlug: "prod"
   secretPath: "/seafile"
+
+scaleToZero:
+  enabled: true

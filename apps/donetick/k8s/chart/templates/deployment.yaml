@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.infisical.enabled }}
+  annotations:
+    # Operator does a rolling restart of this Deployment whenever the managed
+    # secret (see infisical-static-secret.yaml) changes — no manual redeploy.
+    secrets.infisical.com/auto-reload: "true"
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: donetick
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: DT_ENV
+              value: "selfhosted"
+            - name: DT_SQLITE_PATH
+              value: "/donetick-data/donetick.db"
+            - name: DT_SERVER_PUBLIC_HOST
+              value: {{ .Values.publicHost | quote }}
+            - name: TZ
+              value: {{ .Values.timezone | quote }}
+            - name: DT_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Release.Name }}-secrets
+                  key: DT_JWT_SECRET
+          ports:
+            - containerPort: 2021
+          volumeMounts:
+            - name: data
+              mountPath: /donetick-data
+            - name: config
+              mountPath: /config
+          readinessProbe:
+            httpGet: { path: /api/v1/health, port: 2021 }
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /api/v1/health, port: 2021 }
+            initialDelaySeconds: 15
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-config

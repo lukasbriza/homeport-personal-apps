@@ -67,3 +67,9 @@ useful for local testing, never used in prod.
 - Data migrations from the old Docker Compose stack: SQLite/plain files → `rsync`
   the bind-mount into the new PV's host path; a real RDBMS (Postgres, MariaDB) →
   `pg_dump`/`mysqldump` and restore, not a raw data-directory copy.
+- Low-traffic apps can opt into scale-to-zero (KEDA's HTTP Add-on, installed
+  cluster-wide from `homeport-infrastructure-apps`' `core/keda`) instead of running
+  24/7 — `scaleToZero.*` in a chart's `values.yaml`; see `apps/wishlist` for the
+  reference implementation and that repo's `DEPLOYMENT.md` for how it works. Not a
+  fit for anything with long-lived connections (SSE/WebSocket) or that other apps
+  depend on for auth.

@@ -1,0 +1,55 @@
+# Committed default config (no secrets — the JWT signing key is supplied at runtime
+# via the DT_JWT_SECRET env var, which Donetick's Viper-based config loader uses to
+# override the `jwt.secret` value below). Used for both local docker-compose and,
+# rendered into a ConfigMap, the k8s deployment — see k8s/chart/templates/configmap.yaml.
+
+name: "selfhosted"
+is_done_tick_dot_com: false
+is_user_creation_disabled: false
+
+database:
+  type: "sqlite"
+  migration: true
+
+jwt:
+  secret: "set-via-DT_JWT_SECRET-env-var"
+  session_time: 168h
+  max_refresh: 1440h
+
+server:
+  port: 2021
+  read_timeout: 10s
+  write_timeout: 10s
+  rate_period: 60s
+  rate_limit: 300
+  cors_allow_origins:
+    - "http://localhost"
+  serve_frontend: true
+  serve_swagger: true
+  # Real value comes from the DT_SERVER_PUBLIC_HOST env var override.
+  public_host: ""
+
+logging:
+  level: "info"
+  encoding: "json"
+  development: false
+
+scheduler_jobs:
+  due_job: 30m
+  overdue_job: 3h
+  pre_due_job: 3h
+
+realtime:
+  enabled: true
+  sse_enabled: true
+  heartbeat_interval: 60s
+  connection_timeout: 120s
+  max_connections: 1000
+  max_connections_per_user: 5
+  event_queue_size: 2048
+  cleanup_interval: 2m
+  stale_threshold: 5m
+  enable_compression: true
+  enable_stats: true
+  allowed_origins:
+    - "*"

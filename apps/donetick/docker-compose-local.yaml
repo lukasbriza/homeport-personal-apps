@@ -1,0 +1,24 @@
+# VARIABLES DEFINED IN .ENV.LOCAL FILES #
+#########################################
+# - apps/donetick
+#
+# To work with .env.local files you need to run `docker:build-local` or `docker:run-local`.
+
+name: homeport-donetick-local
+
+services:
+  donetick:
+    image: donetick/donetick:latest
+    container_name: donetick-local
+    environment:
+      - DT_ENV=selfhosted
+      - DT_SQLITE_PATH=/donetick-data/donetick.db
+      - DT_SERVER_PUBLIC_HOST=${DONETICK_PUBLIC_HOST}
+      - DT_JWT_SECRET=${DT_JWT_SECRET}
+      - TZ=Europe/Prague
+    ports:
+      - ${HOST_DONETICK_PORT}:2021
+    volumes:
+      - ./local_data:/donetick-data
+      - ./config:/config
+    restart: unless-stopped

@@ -1,0 +1,8 @@
+origin: "https://wishlist.lukasbriza.eu"
+
+ingress:
+  enabled: true
+  host: "wishlist.lukasbriza.eu"
+
+scaleToZero:
+  enabled: true

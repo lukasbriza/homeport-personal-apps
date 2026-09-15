@@ -1,0 +1,20 @@
+# VARIABLES DEFINED IN .ENV.LOCAL FILES #
+#########################################
+# - apps/wishlist
+#
+# To work with .env.local files you need to run `docker:build-local` or `docker:run-local`.
+
+name: homeport-wishlist-local
+
+services:
+  wishlist:
+    image: ghcr.io/cmintey/wishlist:latest
+    container_name: wishlist-local
+    environment:
+      - ORIGIN=${WISHLIST_ORIGIN}
+    ports:
+      - ${HOST_WISHLIST_PORT}:3280
+    volumes:
+      - ./local_data/data:/usr/src/app/data
+      - ./local_data/uploads:/usr/src/app/uploads
+    restart: unless-stopped

@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: wishlist
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+            - name: ORIGIN
+              value: {{ .Values.origin | quote }}
+          ports:
+            - containerPort: 3280
+          volumeMounts:
+            - name: data
+              mountPath: /usr/src/app/data
+            - name: uploads
+              mountPath: /usr/src/app/uploads
+          readinessProbe:
+            httpGet: { path: /, port: 3280 }
+            initialDelaySeconds: 5
+          livenessProbe:
+            httpGet: { path: /, port: 3280 }
+            initialDelaySeconds: 15
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-data
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}-uploads

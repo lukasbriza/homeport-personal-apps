@@ -1,0 +1,7 @@
+# Copy to values-prod.yaml and fill in the real domain.
+
+origin: "https://<domain>"
+
+ingress:
+  enabled: true
+  host: "<domain>"
