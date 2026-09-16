@@ -8,7 +8,7 @@ image:
   repository: lbriza/keycloak
   # Bumped automatically by .github/workflows/keycloak-build-push.yml on
   # every keycloak-v* tag push — don't hand-edit this in normal use.
-  tag: keycloak-v1.0.0
+  tag: keycloak-v1
 
 replicas: 1
 
