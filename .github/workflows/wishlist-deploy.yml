@@ -1,0 +1,32 @@
+# Triggers an ArgoCD sync for wishlist when a deploy tag (wishlist-v*) is pushed.
+# wishlist has no build step of its own — this repo just points at the upstream
+# ghcr.io/cmintey/wishlist image directly (see
+# apps/wishlist/k8s/chart/values.yaml) — so unlike actual-build-push.yml /
+# keycloak-build-push.yml there's no image to build, and the tag carries no
+# version; it's purely the "deploy now" signal. The Application's automated sync
+# is intentionally off (see infrastructure/argocd/k8s/applications/wishlist.yaml
+# in homeport-infrastructure-apps) so nothing else can trigger a deploy.
+name: Deploy wishlist
+
+on:
+  push:
+    tags:
+      - "wishlist-v*"
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install argocd CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Sync via ArgoCD
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app sync wishlist --server argocd.lukasbriza.eu --grpc-web
+          argocd app wait wishlist --server argocd.lukasbriza.eu --grpc-web --health
