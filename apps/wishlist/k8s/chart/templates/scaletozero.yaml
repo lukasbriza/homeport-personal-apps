@@ -11,8 +11,12 @@ spec:
   target:
     service: {{ .Release.Name }}
     port: {{ .Values.service.port }}
+  # A rule without `paths` only matches the literal root ("/"), not the app as
+  # a whole — the explicit "/" prefix below is required to cover every path.
   rules:
     - hosts: [{{ .Values.ingress.host | quote }}]
+      paths:
+        - value: /
   scalingMetric:
     requestRate:
       targetValue: {{ .Values.scaleToZero.targetRequestRate }}
