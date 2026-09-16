@@ -1,12 +1,14 @@
-# Builds + pushes keycloak's image, then bumps the tag in the Helm chart's
-# values.yaml and commits that change onto the tracked branch — ArgoCD picks
-# up the new commit and redeploys. This is the whole GitOps loop: this
-# workflow never touches the cluster directly.
+# Builds + pushes keycloak's image, bumps the tag in the Helm chart's
+# values.yaml, commits that onto the tracked branch, then triggers an ArgoCD
+# sync directly — the Application's automated sync is intentionally off (see
+# infrastructure/argocd/k8s/applications/keycloak.yaml in
+# homeport-infrastructure-apps), so nothing deploys except through this
+# workflow's own `argocd app sync` step below.
 #
 # Triggered by a version tag (keycloak-v1.2.3), not by every push to the
-# Dockerfile — creating the tag is the deliberate "release this" moment.
-# Same convention as homeport-infrastructure-apps/.github/workflows/infisical-build-push.yml
-# (first time it's used in this repo).
+# Dockerfile — creating the tag is the deliberate "release this" moment, and it
+# now gates both the image build and the deploy in one step. Same convention as
+# actual-build-push.yml.
 name: Build and push keycloak image
 
 on:
@@ -66,3 +68,16 @@ jobs:
             git rebase origin/master
             sleep 2
           done
+
+      - name: Install argocd CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Sync via ArgoCD
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app sync keycloak --server argocd.lukasbriza.eu --grpc-web
+          argocd app wait keycloak --server argocd.lukasbriza.eu --grpc-web --health
