@@ -16,7 +16,10 @@ here has real application source to lint or build via `turbo`.
 Each `apps/<name>/` folder colocates:
 - `Dockerfile` (only if the image needs a custom build/re-tag — several apps just use
   the upstream image directly, e.g. `seafile`, no local Dockerfile at all)
-- `docker-compose-local.yaml` for local dev (kept even after k3s migration)
+- `docker-compose-local.yaml` for local dev (kept even after k3s migration) and, for
+  several apps, a bind-mounted `local_data/` holding that local dev instance's real
+  state (SQLite files, a Postgres data directory, uploaded blobs) — not source, never
+  meant to be read or graphed
 - `k8s/chart/` — the app's Helm chart: `values.yaml` (safe defaults, committed),
   `values-prod.yaml` (real values, also committed — nothing in it is a secret, real
   credentials come from Infisical), `values-prod.example.yaml` (template for the above)
@@ -24,6 +27,11 @@ Each `apps/<name>/` folder colocates:
 The ArgoCD `Application` manifests that deploy these charts live in the **other**
 repo, `homeport-infrastructure-apps/infrastructure/argocd/k8s/applications/` — this
 repo has no ArgoCD config of its own, just what gets deployed.
+
+`turbo/generators/` and `templates/*` are inherited from the monorepo-template this
+repo was scaffolded from — they scaffold new **JS/TS** apps/packages and aren't used
+here. A new app is added by copying an existing app's `k8s/chart` folder (see
+`DEPLOYMENT.md`/`CONTRIBUTING.md`), never via `pnpm turbo gen`.
 
 ## GitOps loop
 
@@ -55,6 +63,44 @@ useful for local testing, never used in prod.
   triggers kubelet's legacy Docker-links env injection (`ACTUAL_PORT=tcp://...`),
   which crashes apps that read that var as a bare port number. Fix: `enableServiceLinks:
   false` on the pod spec, not a rename.
+
+## Common tasks
+
+Root scripts run through Turborepo across every workspace (`apps/*`, `packages/*`) —
+but with no real application source here, only `packages/*` (the shared config
+packages) and the repo's own root-level files actually do anything:
+
+```
+pnpm lint       # turbo lint (--no-daemon) | pnpm lint:fix
+pnpm ts         # turbo typecheck
+pnpm format     # prettier --write "**/*.{ts,tsx,md}"
+pnpm build      # turbo build — no-op outside packages/*
+pnpm test       # turbo test — no-op, nothing has tests
+pnpm dev        # turbo dev  — no-op, nothing has a dev server
+```
+
+## AI workflow
+
+`.claude/` (skills, agents, commands, hooks) is inherited from the monorepo-template
+and kept in sync via the `sync-template` skill (`.claude/skills/sync-template`). Most
+of the synced skills (`coding-conventions`, `web-performance`, `native-performance`)
+target React/Next/Nest/Expo code and don't apply here; the generic ones do —
+`commit-and-pr` (Conventional Commits), `plan-project`, `writing-skills`.
+
+- **Knowledge graph (graphify)**: the `graphifyy` CLI (installed per-machine —
+  `pip install graphifyy`) builds a queryable graph of this repo into `graphify-out/`
+  (gitignored, regenerable — never commit it). Build via the **terminal CLI**
+  (`graphify .`), never through an agent — with no external key it falls back to using
+  the *host agent itself* as its LLM, which burns Claude session quota summarizing
+  every file.
+  - **Code-only by default.** This repo's `.graphifyignore` excludes docs/images (so
+    the build is AST-only — no LLM, no API key, no token cost) *and* every app's
+    `local_data/` — real bind-mounted dev state (SQLite/Postgres files, blobs), not
+    source. `.graphifyignore` **replaces** `.gitignore` for graphify rather than
+    merging with it — keep both in sync if you add a new ignored path.
+  - **Query instead of reading the graph**: `graphify query "…"`, `graphify path A B`,
+    `graphify explain <node>`. Never read `graph.json`/`graph.html` directly into
+    context (~1 MB each).
 
 ## Conventions
 

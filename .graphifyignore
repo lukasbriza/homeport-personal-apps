@@ -1,0 +1,57 @@
+# .graphifyignore — controls what graphify ingests (gitignore syntax).
+#
+# IMPORTANT: graphify REPLACES this repo's .gitignore when a .graphifyignore exists
+# (they are NOT merged). So this file must ALSO re-list the deps/build/secret excludes
+# from .gitignore, or they'd get indexed into the graph — keep both in sync.
+
+# --- CODE-ONLY: skip docs / papers / images ---
+# These are the only files that need the *paid* LLM semantic pass. Excluding them keeps
+# `graphify .` AST-only: no LLM, no API key, no token cost. Add a GEMINI_API_KEY and drop
+# the lines below if you ever want docs graphed cheaply (never via the Claude quota).
+*.md
+*.mdx
+*.txt
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.ico
+*.ipynb
+
+# --- deps / build / caches (mirror of .gitignore) ---
+node_modules/
+node-compile-cache
+.pnp
+.pnp.js
+.turbo
+.eslintcache
+coverage/
+dist/
+build/
+.next/
+out/
+.vercel
+*.tsbuildinfo
+tsconfig.build.tsbuildinfo
+tsconfig.tsbuildinfo
+temp/
+graphify-out/
+
+# --- secrets / env (must stay excluded here, since this overrides .gitignore) ---
+.env
+.env.*
+*.pem
+
+# --- logs / lockfiles / misc ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+pnpm-lock.yaml
+
+# --- local runtime data (not source — bind-mounted dev state per app) ---
+local_data/

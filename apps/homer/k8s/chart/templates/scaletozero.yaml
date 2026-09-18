@@ -22,6 +22,18 @@ spec:
       targetValue: {{ .Values.scaleToZero.targetRequestRate }}
       window: {{ .Values.scaleToZero.window }}
       granularity: 1s
+  # Shown to users while this pod is cold-starting instead of a bare "no
+  # endpoints" error. The ConfigMap itself lives in homeport-infrastructure-apps
+  # (core/coldstart-page) — this namespace just needs to be listed in that
+  # chart's values-prod.yaml, or this reference resolves to nothing.
+  coldStart:
+    placeholder:
+      response:
+        bodyFromConfigMap:
+          name: coldstart-page
+          key: index.html
+        headers:
+          Refresh: "3"
 ---
 # The actual autoscaler — scales this app's own Deployment (same name as the
 # Release, per deployment.yaml) between 0 and maxReplicas based on the request
