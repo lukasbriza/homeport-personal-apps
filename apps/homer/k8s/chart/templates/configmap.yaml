@@ -1,0 +1,13 @@
+# config.yml is git-managed here (files/config.yml) instead of living only on
+# the PVC. Mounted as its own directory in deployment.yaml (not `subPath`, so
+# ArgoCD syncs reach the running pod without a restart — see that file's
+# comment) and symlinked into place by an initContainer. The rest of
+# /www/assets (icons etc.) still comes from the PVC, untouched.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yml: |
+{{ .Files.Get "files/config.yml" | indent 4 }}

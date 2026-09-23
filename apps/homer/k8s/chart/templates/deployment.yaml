@@ -19,6 +19,25 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+      # `subPath` mounts (an earlier version of this used one for config.yml)
+      # never pick up ConfigMap updates without a pod restart — a Kubernetes
+      # limitation, not a bug. A full-directory ConfigMap mount (like `config`
+      # below) DOES get live-synced by kubelet every ~60s, so instead this
+      # symlinks config.yml into that live-synced directory once at pod start.
+      # The symlink target then always resolves to the current ConfigMap
+      # content — no restart needed to pick up a `git push` + ArgoCD sync.
+      initContainers:
+        - name: link-config
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - mkdir -p /www/assets && ln -sf /homer-config/config.yml /www/assets/config.yml
+          volumeMounts:
+            - name: data
+              mountPath: /www/assets
+            - name: config
+              mountPath: /homer-config
       containers:
         - name: homer
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -30,6 +49,16 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /www/assets
+            # Target of the symlink the initContainer creates above — must be
+            # mounted here too so the main container's filesystem view can
+            # resolve it.
+            - name: config
+              mountPath: /homer-config
+            # Icons ConfigMap mounted directly as a directory — /www/assets/tools
+            # is itself a directory, so no symlink indirection is needed here
+            # (unlike config.yml above). Live-syncs the same way, ~60s after sync.
+            - name: icons
+              mountPath: /www/assets/tools
           readinessProbe:
             httpGet: { path: /, port: 8080 }
             initialDelaySeconds: 5
@@ -42,3 +71,9 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: {{ .Release.Name }}-data
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}-config
+        - name: icons
+          configMap:
+            name: {{ .Release.Name }}-icons

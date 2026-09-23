@@ -1,0 +1,25 @@
+# Icon/logo images for dashboard entries — git-managed here (files/tools/*)
+# instead of living only on the PVC. `.Files.Glob` picks up every file under
+# files/tools/ automatically, so adding an icon is just "drop the PNG in
+# files/tools/, commit, push" — no template edit needed.
+#
+# Mounted in deployment.yaml as a full directory at /www/assets/tools (no
+# `subPath`), so — same as config.yml's ConfigMap — kubelet live-syncs it into
+# the running pod within ~60s of an ArgoCD sync, no restart required. Unlike
+# config.yml, /www/assets/tools is itself meant to be a directory, so this one
+# doesn't need the symlink/initContainer indirection: the ConfigMap can be
+# mounted directly at that path.
+#
+# ConfigMaps cap out around 1MiB of total content. Current icons are ~300KB
+# raw (~400KB after base64) — comfortably under that. If this set grows past
+# the limit, split into multiple ConfigMaps (e.g. per homer group) mounted at
+# their own paths.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-icons
+  namespace: {{ .Release.Namespace }}
+binaryData:
+{{- range $path, $bytes := .Files.Glob "files/tools/**" }}
+  {{ base $path }}: {{ $.Files.Get $path | b64enc }}
+{{- end }}
