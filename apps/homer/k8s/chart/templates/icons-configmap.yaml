@@ -10,15 +10,29 @@
 # doesn't need the symlink/initContainer indirection: the ConfigMap can be
 # mounted directly at that path.
 #
-# ConfigMaps cap out around 1MiB of total content. Current icons are ~300KB
-# raw (~400KB after base64) — comfortably under that. If this set grows past
+# ConfigMaps cap out around 1MiB of total content. Current icons are ~500KB
+# raw (~650KB after base64) — comfortably under that. If this set grows past
 # the limit, split into multiple ConfigMaps (e.g. per homer group) mounted at
 # their own paths.
+#
+# Separately, Kubernetes caps total metadata.annotations at 256KiB per object.
+# ArgoCD's default (client-side) apply duplicates this ConfigMap's data into
+# the kubectl.kubernetes.io/last-applied-configuration annotation, which blows
+# past that cap well before the 1MiB object limit — see the
+# argocd.argoproj.io/sync-options annotation below.
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ .Release.Name }}-icons
   namespace: {{ .Release.Namespace }}
+  annotations:
+    # Base64'd icon data pushes this well past the 256KiB metadata.annotations
+    # cap once ArgoCD's client-side apply duplicates it into the
+    # kubectl.kubernetes.io/last-applied-configuration annotation. Server-side
+    # apply tracks state via the API server's managedFields instead, so
+    # nothing gets duplicated. Scoped to just this resource, not the whole
+    # Application, since config.yml's ConfigMap is small enough not to need it.
+    argocd.argoproj.io/sync-options: ServerSideApply=true
 binaryData:
 {{- range $path, $bytes := .Files.Glob "files/tools/**" }}
   {{ base $path }}: {{ $.Files.Get $path | b64enc }}
