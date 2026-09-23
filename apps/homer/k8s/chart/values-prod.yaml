@@ -2,5 +2,10 @@ ingress:
   enabled: true
   host: "lukasbriza.eu"
 
+# Disabled — as the root-domain dashboard/landing page, it's hit often enough
+# that scale-to-zero saves little, and the KEDA HTTP interceptor can show a
+# broken/error page for the moment between "scaled to 1" and the pod actually
+# passing its readinessProbe (race between the interceptor dropping the
+# cold-start placeholder and the Service getting a ready endpoint).
 scaleToZero:
-  enabled: true
+  enabled: false
