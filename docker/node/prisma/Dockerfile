@@ -1,13 +1,24 @@
 # ARG TO BE DEFINED:
-# - TAG
+# - NODE_VERSION (optional, default 22)
 # - APP
 # - PORT
 
-# For all available tags look at https://hub.docker.com/repository/docker/lbriza/shared/tags
-ARG TAG=base-latest
+ARG NODE_VERSION=22
 ARG APP_FOLDER=apps
 
-FROM lbriza/shared:${TAG} AS shared
+FROM node:${NODE_VERSION}-alpine AS shared
+
+ENV PNPM_HOME="/pnpm" \
+    PATH="/pnpm:$PATH" \
+    TURBO_TELEMETRY_DISABLED=1 \
+    NEXT_TELEMETRY_DISABLED=1 \
+    NODE_OPTIONS="--max-old-space-size=4096" \
+    CI=true \
+    DOCKER=true
+
+RUN apk add --no-cache libc6-compat bash curl jq && \
+    npm i -g corepack && \
+    corepack enable
 
 ################################
 # Corepack preparation
