@@ -5,7 +5,7 @@
 # fallback below, only used when infisical.enabled is false).
 
 image:
-  repository: lbriza/keycloak
+  repository: ghcr.io/lukasbriza/keycloak
   # Bumped automatically by .github/workflows/keycloak-build-push.yml on
   # every keycloak-v* tag push — don't hand-edit this in normal use.
   tag: keycloak-v1
