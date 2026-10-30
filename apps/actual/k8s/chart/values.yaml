@@ -5,7 +5,7 @@
 # app data itself (set up on first run).
 
 image:
-  repository: lbriza/actual
+  repository: ghcr.io/lukasbriza/actual
   # Bumped automatically by .github/workflows/actual-build-push.yml on every
   # actual-v* tag push — don't hand-edit this in normal use.
   tag: actual-v1
