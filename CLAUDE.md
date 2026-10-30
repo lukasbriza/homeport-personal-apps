@@ -14,6 +14,7 @@ here has real application source to lint or build via `turbo`.
 ## Repository structure
 
 Each `apps/<name>/` folder colocates:
+
 - `Dockerfile` (only if the image needs a custom build/re-tag — several apps just use
   the upstream image directly, e.g. `seafile`, no local Dockerfile at all)
 - `docker-compose-local.yaml` for local dev (kept even after k3s migration) and, for
@@ -37,7 +38,7 @@ here. A new app is added by copying an existing app's `k8s/chart` folder (see
 
 Apps with a custom Docker image release on a **version tag** (`<app>-v<version>`, e.g.
 `keycloak-v1.0.0`), not on every push — see `.github/workflows/*-build-push.yml`.
-Pushing the tag builds the image, pushes it to Docker Hub, and commits the bumped tag
+Pushing the tag builds the image, pushes it to GHCR (`ghcr.io/lukasbriza/<app>`), and commits the bumped tag
 into that app's `values.yaml`; ArgoCD (watching from `homeport-infrastructure-apps`)
 picks up the commit from there. Apps that only ever use an upstream image unmodified
 (no local Dockerfile) have no build workflow — bump the tag in `values.yaml` by hand.
@@ -62,7 +63,7 @@ useful for local testing, never used in prod.
   env var (e.g. Service `actual` vs. actual-server's own `ACTUAL_PORT` config var)
   triggers kubelet's legacy Docker-links env injection (`ACTUAL_PORT=tcp://...`),
   which crashes apps that read that var as a bare port number. Fix: `enableServiceLinks:
-  false` on the pod spec, not a rename.
+false` on the pod spec, not a rename.
 
 ## Common tasks
 
@@ -91,10 +92,10 @@ target React/Next/Nest/Expo code and don't apply here; the generic ones do —
   `pip install graphifyy`) builds a queryable graph of this repo into `graphify-out/`
   (gitignored, regenerable — never commit it). Build via the **terminal CLI**
   (`graphify .`), never through an agent — with no external key it falls back to using
-  the *host agent itself* as its LLM, which burns Claude session quota summarizing
+  the _host agent itself_ as its LLM, which burns Claude session quota summarizing
   every file.
   - **Code-only by default.** This repo's `.graphifyignore` excludes docs/images (so
-    the build is AST-only — no LLM, no API key, no token cost) *and* every app's
+    the build is AST-only — no LLM, no API key, no token cost) _and_ every app's
     `local_data/` — real bind-mounted dev state (SQLite/Postgres files, blobs), not
     source. `.graphifyignore` **replaces** `.gitignore` for graphify rather than
     merging with it — keep both in sync if you add a new ignored path.

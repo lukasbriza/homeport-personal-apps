@@ -4,7 +4,7 @@ This repo has no cluster of its own — everything here deploys onto the k3s clu
 set up in `homeport-infrastructure-apps` (see that repo's `DEPLOYMENT.md` for the
 one-time server/cluster setup: k3s, Helm, Infisical, the Infisical Operator,
 ArgoCD, cert-renewal). This guide covers deploying and updating an app that lives
-in *this* repo.
+in _this_ repo.
 
 ## What's here
 
@@ -60,7 +60,7 @@ Each has a `k8s/chart/` Helm chart and a `docker-compose-local.yaml` for local d
 
 Only apps with a local Dockerfile (`actual`, `keycloak`, `seafile`) have a build
 workflow — see `.github/workflows/<app>-build-push.yml`. Pushing a version tag
-builds the image, pushes it to Docker Hub, and commits the bumped tag into that
+builds the image, pushes it to GHCR (`ghcr.io/lukasbriza/<app>`), and commits the bumped tag into that
 app's `values.yaml`; ArgoCD picks up the commit from there:
 
 ```bash

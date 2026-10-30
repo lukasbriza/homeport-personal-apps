@@ -40,11 +40,15 @@ git tag <app>-v<version>   # e.g. actual-v1.1.0
 git push origin <app>-v<version>
 ```
 
-This builds the image, pushes it to Docker Hub, and commits the bumped tag into
+This builds the image, pushes it to GHCR (`ghcr.io/lukasbriza/<app>`), and commits the bumped tag into
 that app's `values.yaml` — ArgoCD picks it up from there. See
 `.github/workflows/actual-build-push.yml` for a working example. Apps using an
 upstream image unmodified (`homer`, `vaultwarden`) have no workflow — bump the
 tag in `values.yaml` by hand.
+
+The first push of a new app creates its GHCR package as **private**. Open
+github.com/lukasbriza?tab=packages → the package → Package settings and switch
+it to **Public**, otherwise the cluster can't pull it (no pull secret is set up).
 
 ---
 
