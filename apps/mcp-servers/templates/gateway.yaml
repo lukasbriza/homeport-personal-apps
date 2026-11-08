@@ -29,9 +29,9 @@ spec:
       containers:
         - name: caddy
           image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
-          # Fail closed: Caddy's header matcher treats an empty value as "Bearer " and
-          # honours `*` wildcards, so every token must be at least 32 characters of
-          # [A-Za-z0-9_-] or the pod does not start.
+          # Fail closed: Caddy's header matcher honours `*` wildcards and an empty
+          # token could match an empty header, so every token must be at least 32
+          # characters of [A-Za-z0-9_-] or the pod does not start.
           command:
             - sh
             - -c

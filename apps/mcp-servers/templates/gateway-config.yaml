@@ -19,9 +19,12 @@ data:
 
       # Strips the /{{ $name }} prefix, so /{{ $name }}/mcp reaches the server as /mcp.
       handle_path /{{ $name }}/* {
-        @authorized header Authorization "Bearer {env.TOKEN_{{ $name | upper }}}"
+        # Claude custom connectors reserve the Authorization header, so the token travels
+        # in X-Mcp-Token. It is removed before the request reaches the server.
+        @authorized header X-Mcp-Token "{env.TOKEN_{{ $name | upper }}}"
         handle @authorized {
           reverse_proxy mcp-{{ $name }}:{{ $s.port }} {
+            header_up -X-Mcp-Token
             flush_interval -1
           }
         }
