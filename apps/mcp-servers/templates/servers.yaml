@@ -1,0 +1,109 @@
+{{- range $name, $s := (include "mcp.servers" . | fromYaml) }}
+{{- if $s.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+  {{- if $.Values.infisical.enabled }}
+  annotations:
+    # The operator does a rolling restart whenever the managed Secret changes.
+    secrets.infisical.com/auto-reload: "true"
+  {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-{{ $name }}
+  template:
+    metadata:
+      labels:
+        app: mcp-{{ $name }}
+    spec:
+      # A Service named mcp-<name> would otherwise inject MCP_<NAME>_* link variables.
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: {{ $s.runAsUser | default 10001 }}
+        runAsGroup: {{ $s.runAsUser | default 10001 }}
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: server
+          image: "{{ $s.image.repository }}:{{ $s.image.tag }}"
+          {{- with $s.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: HOME
+              value: /home/mcp
+            {{- range $k, $v := $s.env }}
+            - name: {{ $k }}
+              value: {{ tpl (toString $v) $ | quote }}
+            {{- end }}
+            {{- range $envName, $infisicalKey := $s.secretEnv }}
+            - name: {{ $envName }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Release.Name }}-secrets
+                  key: {{ $name | upper }}_{{ $envName }}
+            {{- end }}
+          ports:
+            - containerPort: {{ $s.port }}
+          volumeMounts:
+            - name: home
+              mountPath: /home/mcp
+          # TCP probes: an HTTP probe would carry the pod IP as Host header and be
+          # rejected by the Host validation above.
+          readinessProbe:
+            tcpSocket: { port: {{ $s.port }} }
+            initialDelaySeconds: 5
+          livenessProbe:
+            tcpSocket: { port: {{ $s.port }} }
+            initialDelaySeconds: 15
+          resources:
+            {{- toYaml $s.resources | nindent 12 }}
+      volumes:
+        - name: home
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-{{ $name }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: mcp-{{ $name }}
+  ports:
+    - port: {{ $s.port }}
+      targetPort: {{ $s.port }}
+---
+# Only the gateway may reach the server pod; nothing else in the cluster can bypass
+# its token check.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mcp-{{ $name }}-from-gateway
+  namespace: {{ $.Release.Namespace }}
+spec:
+  podSelector:
+    matchLabels:
+      app: mcp-{{ $name }}
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: mcp-gateway
+      ports:
+        - port: {{ $s.port }}
+{{- end }}
+{{- end }}

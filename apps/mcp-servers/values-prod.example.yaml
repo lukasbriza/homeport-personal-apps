@@ -1,0 +1,13 @@
+# Copy to values-prod.yaml and fill in real values.
+
+host: "<domain>"
+
+infisical:
+  enabled: true
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: "<infisical-project-id>"
+  environmentSlug: "<env-slug>"
+  # Base folder; each server reads <secretPath>/<server dir>, e.g. /mcp-servers/email.
+  secretPath: "<base-folder-of-mcp-server-secrets>"

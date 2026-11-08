@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: {{ .Release.Namespace }}
+  {{- if .Values.infisical.enabled }}
+  annotations:
+    secrets.infisical.com/auto-reload: "true"
+  {{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/gateway-config.yaml") . | sha256sum }}
+    spec:
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: caddy
+          image: "{{ .Values.gateway.image.repository }}:{{ .Values.gateway.image.tag }}"
+          # Fail closed: Caddy's header matcher treats an empty value as "Bearer " and
+          # honours `*` wildcards, so every token must be at least 32 characters of
+          # [A-Za-z0-9_-] or the pod does not start.
+          command:
+            - sh
+            - -c
+            - |
+              {{- range $name, $s := (include "mcp.servers" . | fromYaml) }}
+              {{- if $s.enabled }}
+              t="$TOKEN_{{ $name | upper }}"
+              case "$t" in ""|*[!A-Za-z0-9_-]*) echo "TOKEN_{{ $name | upper }} missing or has invalid characters" >&2; exit 1;; esac
+              [ "${#t}" -ge 32 ] || { echo "TOKEN_{{ $name | upper }} shorter than 32 characters" >&2; exit 1; }
+              {{- end }}
+              {{- end }}
+              exec caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: XDG_CONFIG_HOME
+              value: /tmp/caddy-config
+            - name: XDG_DATA_HOME
+              value: /tmp/caddy-data
+            {{- range $name, $s := (include "mcp.servers" . | fromYaml) }}
+            {{- if $s.enabled }}
+            - name: TOKEN_{{ $name | upper }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Release.Name }}-secrets
+                  key: TOKEN_{{ $name | upper }}
+            {{- end }}
+            {{- end }}
+          ports:
+            - containerPort: {{ .Values.gateway.port }}
+          volumeMounts:
+            - name: config
+              mountPath: /etc/caddy
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            httpGet: { path: /healthz, port: {{ .Values.gateway.port }} }
+            initialDelaySeconds: 3
+          livenessProbe:
+            httpGet: { path: /healthz, port: {{ .Values.gateway.port }} }
+            initialDelaySeconds: 10
+          resources:
+            {{- toYaml .Values.gateway.resources | nindent 12 }}
+      volumes:
+        - name: config
+          configMap:
+            name: mcp-gateway
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: ClusterIP
+  selector:
+    app: mcp-gateway
+  ports:
+    - port: {{ .Values.gateway.port }}
+      targetPort: {{ .Values.gateway.port }}

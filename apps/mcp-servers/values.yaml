@@ -1,0 +1,36 @@
+# Safe defaults, committed, no secrets. Real values go in values-prod.yaml — see
+# values-prod.example.yaml. Every credential (mailbox login, gateway tokens) comes from
+# Infisical; this chart has no plain-Secret fallback on purpose, so a token can never
+# end up in a values file.
+#
+# The list of MCP servers is not here: the chart picks up every <dir>/server.yaml next
+# to Chart.yaml. A server with its own code keeps Dockerfile and sources in the same
+# directory and is released with the tag mcp-<dir>-v<version>.
+
+# Public hostname (no scheme). One certificate covers every server; each server is
+# reachable under /<dir>/ on this host, e.g. https://<host>/email/mcp.
+host: ""
+
+gateway:
+  image:
+    repository: caddy
+    tag: 2.10-alpine
+  port: 8080
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+
+infisical:
+  enabled: false
+  authRef:
+    name: homeport-infisical-auth
+    namespace: infisical-system
+  projectId: ""
+  environmentSlug: "prod"
+  # Base folder; each server reads its secrets from <secretPath>/<server dir>,
+  # e.g. /mcp-servers/email.
+  secretPath: "/mcp-servers"
