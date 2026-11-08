@@ -1,0 +1,45 @@
+# Config of the email MCP server (upstream image, no source in this repo). The
+# directory name is the URL path segment: https://<host>/email/mcp.
+#
+# Every server directory holds one server.yaml with these fields. A server must:
+#   - serve Streamable HTTP MCP at /mcp on `port` (the gateway strips the /<dir> prefix),
+#   - read its configuration from env vars (`env` / `secretEnv`),
+#   - run as a non-root user (default uid 10001, override with `runAsUser`).
+# Values in `env` are rendered as templates, so {{ .Values.host }} can be used.
+enabled: true
+image:
+  repository: ghcr.io/wh1isper/mcp-email-server
+  tag: "1.14.0"
+# The image entrypoint is `mcp-email-server`; its default argument is `stdio`.
+args: ["streamable-http"]
+port: 9557
+# Infisical key holding this server's bearer token. Min. 32 chars, only [A-Za-z0-9_-]
+# (e.g. `openssl rand -hex 32`). The gateway refuses to start otherwise.
+tokenKey: MCP_EMAIL_TOKEN
+# Container env var -> Infisical key.
+secretEnv:
+  MCP_EMAIL_SERVER_EMAIL_ADDRESS: MCP_EMAIL_ADDRESS
+  MCP_EMAIL_SERVER_PASSWORD: MCP_EMAIL_PASSWORD
+# Non-secret env. MCP_HOST/MCP_PORT/MCP_ALLOWED_* are this server's transport settings;
+# Host/Origin validation stays on and allows only the public hostname. SMTP host is
+# deliberately absent (sending unavailable) and the mutation grants are empty (no flag
+# changes, moves, deletes, saves).
+env:
+  MCP_HOST: "0.0.0.0"
+  MCP_PORT: "9557"
+  MCP_ALLOWED_HOSTS: "{{ .Values.host }}"
+  MCP_ALLOWED_ORIGINS: "https://{{ .Values.host }}"
+  MCP_EMAIL_SERVER_ACCOUNT_NAME: seznam
+  MCP_EMAIL_SERVER_IMAP_HOST: imap.seznam.cz
+  MCP_EMAIL_SERVER_IMAP_PORT: "993"
+  MCP_EMAIL_SERVER_ACCOUNT_ALLOWED_MUTATIONS: ""
+  MCP_EMAIL_SERVER_ALLOWED_RECIPIENTS: ""
+  MCP_EMAIL_SERVER_ENABLE_ATTACHMENT_DOWNLOAD: "false"
+  MCP_EMAIL_SERVER_ENABLE_ATTACHMENT_CONTENT: "false"
+resources:
+  requests:
+    cpu: 25m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 384Mi

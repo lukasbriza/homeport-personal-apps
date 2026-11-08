@@ -1,0 +1,6 @@
+apiVersion: v2
+name: mcp-servers
+description: Remote MCP servers behind a token-checking gateway, exposed as Claude custom connectors
+type: application
+version: 0.1.0
+appVersion: "1"

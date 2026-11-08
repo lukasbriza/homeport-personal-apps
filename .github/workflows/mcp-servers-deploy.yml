@@ -1,0 +1,31 @@
+# Triggers an ArgoCD sync for mcp-servers when a deploy tag (mcp-servers-v*) is pushed.
+# The chart points at upstream images directly (see
+# apps/mcp-servers/*/server.yaml), so there is no image to build and the tag
+# carries no version; it is purely the "deploy now" signal. The Application's
+# automated sync is intentionally off (see
+# infrastructure/argocd/k8s/applications/mcp-servers.yaml in
+# homeport-infrastructure-apps) so nothing else can trigger a deploy.
+name: Deploy mcp-servers
+
+on:
+  push:
+    tags:
+      - 'mcp-servers-v*'
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install argocd CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Sync via ArgoCD
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app sync mcp-servers --server argocd.lukasbriza.eu --grpc-web
+          argocd app wait mcp-servers --server argocd.lukasbriza.eu --grpc-web --health
