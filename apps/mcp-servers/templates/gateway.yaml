@@ -49,6 +49,10 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
+              # The caddy binary carries the file capability cap_net_bind_service; without
+              # it in the bounding set the kernel refuses to exec it. Port 8080 does not
+              # need it.
+              add: ["NET_BIND_SERVICE"]
           env:
             - name: XDG_CONFIG_HOME
               value: /tmp/caddy-config
