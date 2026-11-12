@@ -1,33 +1,24 @@
 /**
- * POST /mcp: one MCP request (initialize, list tools, call a tool, ...).
+ * POST /mcp: one MCP request (discover, list tools, call a tool, ...).
  *
- * Stateless MCP: every request gets a fresh MCP server and transport. Nothing is kept between
- * requests except the SSH sessions, which live in the shared session store.
+ * The SDK handler does the protocol work; this adapts Express to it. `req.body` is already parsed
+ * by express.json(), so it is passed along instead of letting the handler read the stream again.
  */
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import type { McpHttpHandler } from '@modelcontextprotocol/server'
+import { toNodeHandler } from '@modelcontextprotocol/node'
 import type { Request, Response } from 'express'
 
-import { createMcpServer } from '../../mcp-server.js'
 import { sendInternalError } from '../../utils/json-rpc-errors.js'
 import { logError } from '../../utils/log.js'
-import type { RouteContext } from '../index.js'
 
-export const createPostMcpHandler =
-  ({ hosts, sessions }: RouteContext) =>
-  async (req: Request, res: Response) => {
-    const server = createMcpServer(hosts, sessions)
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
-    res.on('close', () => {
-      void transport.close()
-      void server.close()
-    })
-
+export const createPostMcpHandler = (mcpHandler: McpHttpHandler) => {
+  const handle = toNodeHandler(mcpHandler, { onerror: (error) => logError({ error: String(error) }) })
+  return async (req: Request, res: Response) => {
     try {
-      await server.connect(transport)
-      await transport.handleRequest(req, res, req.body)
+      await handle(req, res, req.body)
     } catch (error) {
       logError({ error: String(error) })
-      if (res.headersSent) return
-      sendInternalError(res)
+      if (!res.headersSent) sendInternalError(res)
     }
   }
+}

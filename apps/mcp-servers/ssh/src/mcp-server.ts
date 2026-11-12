@@ -9,7 +9,7 @@
  *
  * Every tool answers with plain text and writes one JSON audit line to stdout.
  */
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { McpServer } from '@modelcontextprotocol/server'
 import { z } from 'zod'
 
 import type { Hosts } from './config.js'
@@ -58,9 +58,9 @@ const formatRunResult = (result: RunResult, extraLines: string[] = []): string =
 
 const shortenCommand = (command: string) => command.slice(0, MAX_AUDIT_COMMAND_LENGTH)
 
-/** Creates the MCP server with all SSH tools. `main.ts` creates one per HTTP request. */
+/** Creates the MCP server with all SSH tools. The MCP handler (routes/mcp/post.ts) creates one per HTTP request. */
 export const createMcpServer = (hosts: Hosts, sessions: SessionStore): McpServer => {
-  const server = new McpServer({ name: 'mcp-ssh-server', version: '0.1.0' })
+  const server = new McpServer({ name: 'mcp-ssh-server', version: '0.2.0' })
   const aliases = Object.keys(hosts).toSorted()
   const hostInput = z.string().describe(`Host alias. One of: ${aliases.join(', ')}.`)
 
@@ -144,7 +144,7 @@ export const createMcpServer = (hosts: Hosts, sessions: SessionStore): McpServer
         "Runs in the remote user's default shell, starting in the home directory. " +
         'Nothing persists between calls; use ssh_open for a working directory that persists. ' +
         'No TTY: interactive programs (vim, top, sudo password prompts) do not work.',
-      inputSchema: { host: hostInput, command: commandInput, timeout_s: timeoutInput },
+      inputSchema: z.object({ host: hostInput, command: commandInput, timeout_s: timeoutInput }),
       annotations: { destructiveHint: true, openWorldHint: true },
     },
     execCommand,
@@ -158,7 +158,7 @@ export const createMcpServer = (hosts: Hosts, sessions: SessionStore): McpServer
         'Opens a connection and returns a session_id for ssh_run. The session keeps the working directory ' +
         '(cd persists), not environment variables. It expires after 15 minutes idle; at most 5 sessions ' +
         'exist at once. Close it with ssh_close when done.',
-      inputSchema: { host: hostInput },
+      inputSchema: z.object({ host: hostInput }),
       annotations: { openWorldHint: true },
     },
     openSession,
@@ -171,7 +171,7 @@ export const createMcpServer = (hosts: Hosts, sessions: SessionStore): McpServer
       description:
         'Runs a command in an open session, starting in the directory the previous command ended in. ' +
         'Returns exit code, stdout, stderr and the new working directory. No TTY.',
-      inputSchema: { session_id: sessionIdInput, command: commandInput, timeout_s: timeoutInput },
+      inputSchema: z.object({ session_id: sessionIdInput, command: commandInput, timeout_s: timeoutInput }),
       annotations: { destructiveHint: true, openWorldHint: true },
     },
     runInSession,
@@ -182,7 +182,7 @@ export const createMcpServer = (hosts: Hosts, sessions: SessionStore): McpServer
     {
       title: 'Close an SSH session',
       description: 'Closes a session opened with ssh_open.',
-      inputSchema: { session_id: sessionIdInput },
+      inputSchema: z.object({ session_id: sessionIdInput }),
     },
     closeSession,
   )

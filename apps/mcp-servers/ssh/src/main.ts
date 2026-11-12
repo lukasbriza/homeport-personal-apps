@@ -3,17 +3,19 @@
  *
  * Request flow:
  *   AI client -> gateway (checks the token, see the mcp-servers chart) -> POST /mcp (routes/)
- *   -> MCP tools (mcp-server.ts) -> SSH (ssh-client.ts, session-store.ts) -> host
+ *   -> MCP handler (SDK v2) -> MCP tools (mcp-server.ts) -> SSH (ssh-client.ts, session-store.ts) -> host
  *
  * Configuration (env vars):
  *   SSH_HOSTS          JSON list of hosts, see config.ts
  *   MCP_ALLOWED_HOSTS  comma-separated hostnames accepted in the Host header (the public hostname)
  *   MCP_PORT           HTTP port, default 9600
  */
-import { hostHeaderValidation } from '@modelcontextprotocol/sdk/server/middleware/hostHeaderValidation.js'
+import { hostHeaderValidation } from '@modelcontextprotocol/express'
 import express from 'express'
 
 import { parseHosts } from './config.js'
+import { createMcpServer } from './mcp-server.js'
+import { createMcpHttpHandler } from './routes/mcp/handler.js'
 import { registerRoutes } from './routes/index.js'
 import { createSessionStore } from './session-store.js'
 import { logInfo } from './utils/log.js'
@@ -43,7 +45,8 @@ app.use(hostHeaderValidation(allowedHosts))
 app.use(express.json({ limit: '1mb' }))
 
 // Every route is a file in routes/ (folder = URL, file = HTTP method); see routes/index.ts.
-registerRoutes(app, { hosts, sessions })
+const mcpHandler = createMcpHttpHandler(() => createMcpServer(hosts, sessions))
+registerRoutes(app, { mcpHandler })
 
 // ---- 3. Start and shutdown ----
 
@@ -57,6 +60,7 @@ const httpServer = app.listen(port, '0.0.0.0', (error?: Error) => {
 for (const signal of ['SIGTERM', 'SIGINT'] as const) {
   process.on(signal, () => {
     sessions.closeAll()
+    void mcpHandler.close()
     httpServer.close(() => process.exit(0))
   })
 }

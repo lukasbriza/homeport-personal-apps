@@ -10,8 +10,7 @@ import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { request } from 'node:http'
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js'
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client'
 import ssh2 from 'ssh2'
 
 const { Server, utils } = ssh2
@@ -102,7 +101,8 @@ await new Promise<void>((resolve, reject) => {
   })
 })
 
-const mcp = new Client({ name: 'test', version: '0' })
+// Pinned to the 2026-07-28 protocol: connect() fails unless `server/discover` offers it.
+const mcp = new Client({ name: 'test', version: '0' }, { versionNegotiation: { mode: { pin: '2026-07-28' } } })
 await mcp.connect(new StreamableHTTPClientTransport(new URL(`http://127.0.0.1:${MCP_PORT}/mcp`)))
 
 /** Calls a tool and returns its text answer. */
@@ -136,6 +136,23 @@ const getStatusForHost = (host: string) =>
 // ---- 3. Checks ----
 
 try {
+  // Protocol: 2025-era clients still work (stateless fallback answers `initialize`, no session id)
+  const legacy = await fetch(`http://127.0.0.1:${MCP_PORT}/mcp`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'initialize',
+      params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'legacy', version: '0' } },
+    }),
+  })
+  assert.equal(legacy.status, 200)
+  assert.equal(legacy.headers.get('mcp-session-id'), null, 'server must stay stateless')
+  assert.match(await legacy.text(), /"serverInfo":\{"name":"mcp-ssh-server"/)
+
+  assert.equal(mcp.getNegotiatedProtocolVersion(), '2026-07-28')
+
   // Tool list and host list
   const { tools } = await mcp.listTools()
   assert.deepEqual(tools.map((tool) => tool.name).toSorted(), [
