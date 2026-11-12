@@ -1,8 +1,8 @@
 # Config of the email MCP server (upstream image, no source in this repo). The
-# directory name is the URL path segment: https://<host>/email/mcp.
+# file name is the URL path segment: https://<host>/email/mcp.
 #
-# Every server directory holds one server.yaml with these fields. A server must:
-#   - serve Streamable HTTP MCP at /mcp on `port` (the gateway strips the /<dir> prefix),
+# Every server is one servers/<name>.yaml with these fields. A server must:
+#   - serve Streamable HTTP MCP at /mcp on `port` (the gateway strips the /<name> prefix),
 #   - read its configuration from env vars (`env` / `secretEnv`),
 #   - run as a non-root user (default uid 10001, override with `runAsUser`).
 # Values in `env` are rendered as templates, so {{ .Values.host }} can be used.

@@ -6,10 +6,12 @@ before making changes, don't duplicate their content here.
 
 ## What this repo is
 
-Personal self-hosted apps for homeport, deployed to a single-node k3s cluster. Unlike
-`homeport-infrastructure-apps`, this repo is entirely Docker/Helm config around
-third-party images (`actual`, `homer`, `keycloak`, `seafile`, `vaultwarden`) — no app
-here has real application source to lint or build via `turbo`.
+Personal self-hosted apps for homeport, deployed to a single-node k3s cluster. Mostly
+Docker/Helm config around third-party images (`actual`, `donetick`, `homer`,
+`keycloak`, `seafile`, `vaultwarden`, `wishlist`, the `email` MCP server). The only own
+application source is an MCP server with its own code under `apps/mcp-servers/<name>/`
+(e.g. `ssh`, TypeScript) — a standalone package with its own lockfile, outside the pnpm
+workspace, built and tested by its release workflow, not by `turbo`.
 
 ## Repository structure
 
@@ -25,6 +27,11 @@ Each `apps/<name>/` folder colocates:
   `values-prod.yaml` (real values, also committed — nothing in it is a secret, real
   credentials come from Infisical), `values-prod.example.yaml` (template for the above)
 
+`apps/mcp-servers/` is one chart for several MCP servers behind a token gateway. Each
+server is one `k8s/chart/servers/<name>.yaml` — read via `.Files.Glob`, so it must live
+inside the chart. A server with its own code keeps `Dockerfile` and sources in
+`apps/mcp-servers/<name>/` (outside the chart) and releases on `mcp-<name>-v<version>`.
+
 The ArgoCD `Application` manifests that deploy these charts live in the **other**
 repo, `homeport-infrastructure-apps/infrastructure/argocd/k8s/applications/` — this
 repo has no ArgoCD config of its own, just what gets deployed.
@@ -32,16 +39,24 @@ repo has no ArgoCD config of its own, just what gets deployed.
 `turbo/generators/` and `templates/*` are inherited from the monorepo-template this
 repo was scaffolded from — they scaffold new **JS/TS** apps/packages and aren't used
 here. A new app is added by copying an existing app's `k8s/chart` folder (see
-`DEPLOYMENT.md`/`CONTRIBUTING.md`), never via `pnpm turbo gen`.
+`DEPLOYMENT.md`/`CONTRIBUTING.md`) or with the `deploy-k8s` skill, never via
+`pnpm turbo gen`.
 
 ## GitOps loop
 
-Apps with a custom Docker image release on a **version tag** (`<app>-v<version>`, e.g.
-`keycloak-v1.0.0`), not on every push — see `.github/workflows/*-build-push.yml`.
-Pushing the tag builds the image, pushes it to GHCR (`ghcr.io/lukasbriza/<app>`), and commits the bumped tag
-into that app's `values.yaml`; ArgoCD (watching from `homeport-infrastructure-apps`)
-picks up the commit from there. Apps that only ever use an upstream image unmodified
-(no local Dockerfile) have no build workflow — bump the tag in `values.yaml` by hand.
+Nothing deploys on a plain push: every ArgoCD `Application` (in
+`homeport-infrastructure-apps`) has automated sync off. A deploy is a **tag push**, and
+every workflow ends with `argocd app sync`:
+
+- `<app>-v<version>` on an app with a local Dockerfile (`<app>-build-push.yml`, e.g.
+  `keycloak-v1.0.0`) builds the image, pushes it to GHCR (`ghcr.io/lukasbriza/<app>`)
+  and commits the bumped tag into the chart's `values.yaml` on `master`.
+- `mcp-<name>-v<version>` does the same for an MCP server with its own code
+  (`mcp-<name>-build-push.yml`); the bump lands in
+  `apps/mcp-servers/k8s/chart/servers/<name>.yaml`.
+- `<app>-v*` on an upstream-image app (`<app>-deploy.yml`) only syncs; the tag carries
+  no version. Bump the image tag in `values.yaml` (or `servers/<name>.yaml`) by hand
+  first.
 
 ## Secrets
 
@@ -68,16 +83,22 @@ false` on the pod spec, not a rename.
 ## Common tasks
 
 Root scripts run through Turborepo across every workspace (`apps/*`, `packages/*`) —
-but with no real application source here, only `packages/*` (the shared config
-packages) and the repo's own root-level files actually do anything:
+but no `apps/*` workspace has lint/build/test scripts, so only `packages/*` (the shared
+config packages) and the repo's own root-level files actually do anything:
 
 ```
 pnpm lint       # turbo lint (--no-daemon) | pnpm lint:fix
 pnpm ts         # turbo typecheck
 pnpm format     # prettier --write "**/*.{ts,tsx,md}"
 pnpm build      # turbo build — no-op outside packages/*
-pnpm test       # turbo test — no-op, nothing has tests
+pnpm test       # turbo test — no-op, no workspace has tests
 pnpm dev        # turbo dev  — no-op, nothing has a dev server
+```
+
+An MCP server with its own code is built and tested from its own folder:
+
+```
+cd apps/mcp-servers/ssh && pnpm install --ignore-workspace && pnpm build && pnpm test
 ```
 
 ## AI workflow
@@ -86,7 +107,11 @@ pnpm dev        # turbo dev  — no-op, nothing has a dev server
 and kept in sync via the `sync-template` skill (`.claude/skills/sync-template`). Most
 of the synced skills (`coding-conventions`, `web-performance`, `native-performance`)
 target React/Next/Nest/Expo code and don't apply here; the generic ones do —
-`commit-and-pr` (Conventional Commits), `plan-project`, `writing-skills`.
+`commit-and-pr` (Conventional Commits), `plan-project`, `writing-skills`, and
+`deploy-k8s` (chart, release workflow, Infisical, ArgoCD hand-off; every app here is
+its "Upstream image" or "Local Dockerfile" type, none is a turbo app). Edit synced skills in
+monorepo-template, never here — a local edit or delete breaks the next `sync-template`
+(`git apply --3way` is atomic, one failed file drops the whole delta).
 
 - **Knowledge graph (graphify)**: the `graphifyy` CLI (installed per-machine —
   `pip install graphifyy`) builds a queryable graph of this repo into `graphify-out/`

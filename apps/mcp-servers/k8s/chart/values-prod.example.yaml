@@ -9,5 +9,5 @@ infisical:
     namespace: infisical-system
   projectId: "<infisical-project-id>"
   environmentSlug: "<env-slug>"
-  # Base folder; each server reads <secretPath>/<server dir>, e.g. /mcp-servers/email.
+  # Base folder; each server reads <secretPath>/<server name>, e.g. /mcp-servers/email.
   secretPath: "<base-folder-of-mcp-server-secrets>"

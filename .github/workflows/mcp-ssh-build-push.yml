@@ -1,0 +1,90 @@
+# Builds + pushes the SSH MCP server image, bumps the tag in
+# apps/mcp-servers/k8s/chart/servers/ssh.yaml, commits that onto the tracked branch, then triggers
+# an ArgoCD sync — the Application's automated sync is intentionally off (see
+# infrastructure/argocd/k8s/applications/mcp-servers.yaml in
+# homeport-infrastructure-apps), so nothing deploys except through this workflow.
+#
+# Triggered by a version tag (mcp-ssh-v1.2.3). Same convention as keycloak-build-push.yml.
+name: Build and push mcp-ssh image
+
+on:
+  push:
+    tags:
+      - 'mcp-ssh-v*'
+  workflow_dispatch: {}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: vars
+        run: echo "version=${GITHUB_REF_NAME#mcp-ssh-v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          package_json_file: apps/mcp-servers/ssh/package.json
+
+      - name: Test
+        working-directory: apps/mcp-servers/ssh
+        run: |
+          pnpm install --frozen-lockfile --ignore-workspace
+          pnpm ts
+          pnpm build
+          pnpm test
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/mcp-servers/ssh
+          file: apps/mcp-servers/ssh/Dockerfile
+          push: true
+          tags: ghcr.io/lukasbriza/mcp-ssh:mcp-ssh-v${{ steps.vars.outputs.version }}
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
+
+      - name: Bump image tag in servers/ssh.yaml
+        run: |
+          sed -i "s/^  tag: mcp-ssh-v.*/  tag: mcp-ssh-v${{ steps.vars.outputs.version }}/" apps/mcp-servers/k8s/chart/servers/ssh.yaml
+
+      - name: Commit and push updated servers/ssh.yaml
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          git checkout master
+          git add apps/mcp-servers/k8s/chart/servers/ssh.yaml
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "chore: bump mcp-ssh image to v${{ steps.vars.outputs.version }}"
+          for i in 1 2 3; do
+            git push origin master && break
+            echo "push rejected, rebasing onto latest and retrying ($i/3)"
+            git fetch origin master
+            git rebase origin/master
+            sleep 2
+          done
+
+      - name: Install argocd CLI
+        run: |
+          curl -sSL -o /usr/local/bin/argocd \
+            https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          chmod +x /usr/local/bin/argocd
+
+      - name: Sync via ArgoCD
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app sync mcp-servers --server argocd.lukasbriza.eu --grpc-web
+          argocd app wait mcp-servers --server argocd.lukasbriza.eu --grpc-web --health
