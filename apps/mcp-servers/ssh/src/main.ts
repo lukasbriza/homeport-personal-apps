@@ -17,6 +17,7 @@ import { parseHosts } from './config.js'
 import { registerRoutes } from './routes/index.js'
 import { createSessionStore } from './session-store.js'
 import { logInfo } from './utils/log.js'
+import { logRequests } from './utils/request-log.js'
 
 // ---- 1. Configuration: fail at startup when something is missing ----
 
@@ -35,6 +36,8 @@ const sessions = createSessionStore()
 
 const app = express()
 app.disable('x-powered-by')
+// First, so rejected requests (e.g. a wrong Host header) are logged too.
+app.use(logRequests)
 // Rejects requests whose Host header is not in MCP_ALLOWED_HOSTS (protects against DNS rebinding).
 app.use(hostHeaderValidation(allowedHosts))
 app.use(express.json({ limit: '1mb' }))
