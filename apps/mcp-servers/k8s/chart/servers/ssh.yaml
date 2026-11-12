@@ -5,7 +5,7 @@
 # Stays disabled until the image exists and both Infisical secrets are set: an enabled
 # server without its token stops the gateway from starting, which takes the other
 # servers down with it.
-enabled: false
+enabled: true
 image:
   repository: ghcr.io/lukasbriza/mcp-ssh
   tag: mcp-ssh-v0.1.0
