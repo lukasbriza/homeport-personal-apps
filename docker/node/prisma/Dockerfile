@@ -1,116 +1,128 @@
+# syntax=docker/dockerfile:1
+
+# Production image of a NestJS app with Prisma 7 (the `pg` driver adapter, the client generated into `src/`,
+# `prisma.config.ts`; there is no query engine binary, so this is not for Prisma 6 and older). The build context is the
+# repository root (turbo prune needs the whole workspace):
+#
+#   docker build -f docker/node/prisma/Dockerfile --build-arg APP=<name> -t <name>:local .
+#
 # ARG TO BE DEFINED:
-# - NODE_VERSION (optional, default 22)
-# - APP
-# - PORT
+# - APP (required): the name of the app, `apps/<APP>` with the package `@lukasbriza/<APP>`
+# ARG WITH A DEFAULT:
+# - NODE_VERSION, ALPINE_VERSION: the base image, the Node must be 22.12 or newer
+# - APP_FOLDER (apps): the folder of the app in the workspace
+# - PORT (3000): the port the server listens on
+#
+# The image holds no configuration and no secrets: everything comes from the environment at run time. Besides the
+# server (the default command) it can apply the migrations, which never run on start:
+#
+#   node node_modules/prisma/build/index.js migrate deploy      (working directory /app/<APP_FOLDER>/<APP>)
 
-ARG NODE_VERSION=22
-ARG APP_FOLDER=apps
-
-FROM node:${NODE_VERSION}-alpine AS shared
-
-ENV PNPM_HOME="/pnpm" \
-    PATH="/pnpm:$PATH" \
-    TURBO_TELEMETRY_DISABLED=1 \
-    NEXT_TELEMETRY_DISABLED=1 \
-    NODE_OPTIONS="--max-old-space-size=4096" \
-    CI=true \
-    DOCKER=true
-
-RUN apk add --no-cache libc6-compat bash curl jq && \
-    npm i -g corepack && \
-    corepack enable
+ARG NODE_VERSION=22.22.3
+ARG ALPINE_VERSION=3.22
 
 ################################
-# Corepack preparation
-COPY package.json .
-RUN corepack prepare "$(jq -r '.packageManager' package.json)" --activate && \
-    rm package.json
+# Toolchain: Node and pnpm (the version of pnpm comes from `packageManager` of the root package.json)
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+
+ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+RUN corepack enable
+
+WORKDIR /app
 
 ################################
-# Setup turbo on the shared image base
-FROM shared AS base
-
-WORKDIR /application
-RUN npm install turbo --global && \
-    pnpm config set store-dir /application/.pnpm-store
-
-################################
-# Prune project
+# Pruned workspace: only the app and the packages it depends on, manifests apart from sources so the dependency
+# layers below do not change with the code
 FROM base AS pruner
-ARG APP
 
-WORKDIR /application
+ARG APP
+ENV TURBO_TELEMETRY_DISABLED=1
+
+RUN test -n "${APP}" || { echo "The build argument APP is required, e.g. --build-arg APP=coffra-be" >&2; exit 1; }
+
+# The same turbo as the repository uses
+COPY package.json ./
+RUN npm install --global "turbo@$(node -p "require('./package.json').dependencies.turbo")"
+
 COPY . .
-RUN turbo prune @lukasbriza/${APP} --docker
+RUN turbo prune "@lukasbriza/${APP}" --docker
 
 ################################
-# Build the project
-FROM base AS builder
+# Build: every dependency, the Prisma client, the compiled app
+FROM base AS build
+
 ARG APP
 ARG APP_FOLDER=apps
 
-# Copy codestyle configuration files
-COPY --from=pruner /application/.npmrc /application/tsconfig.json /application/.eslintrc.cjs /application/.prettierignore /application/prettier.config.js /application/
-COPY --from=pruner /application/scripts /application/scripts/
+COPY --from=pruner /app/out/json/ ./
 
-WORKDIR /application
+# No lifecycle scripts: the `postinstall` of the app generates the Prisma client, which needs the schema that is not
+# here yet. The client is generated explicitly below.
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --ignore-scripts
 
-# Copy lockfile and package.json's of isolated subworkspace
-COPY --from=pruner /application/out/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=pruner /application/out/pnpm-workspace.yaml ./pnpm-workspace.yaml
-COPY --from=pruner /application/out/json/ .
+COPY --from=pruner /app/out/full/ ./
 
-# Download node prune
-RUN curl -sf https://gobinaries.com/tj/node-prune | sh
-# Install the dependencies (as they change less often)
-RUN --mount=type=cache,id=pnpm,target=/application/.pnpm-store pnpm install --frozen-lockfile
-
-# Copy source code of isolated subworkspace
-COPY --from=pruner /application/out/full/ .
-
-WORKDIR /application/${APP_FOLDER}/${APP}
-
-# Remove generated prisma client if exists and generate new prisma code
-RUN rm -rf ./src/modules/prisma/generated && \
-    pnpm prisma:generate
-
-# Build and ceanup
-WORKDIR /application
-RUN turbo build --filter=@lukasbriza/${APP}
-
-# Copy libquery_engine-linux-musl-openssl-3.0.x.so.node in deployment folder
-RUN cp ./apps/${APP}/src/modules/prisma/generated/libquery_engine-linux-musl-openssl-3.0.x.so.node ./apps/${APP}/build/modules/prisma/generated
-
-# Prune and remove unecessary files
-RUN --mount=type=cache,id=pnpm,target=/application/.pnpm-store pnpm prune --prod --no-optional && \
-    rm -rf ./.turbo && \
-    rm -rf ./**/*/src && \
-    rm -rf ./**/*/test && \
-    rm -rf ./**/*/tests && \
-    rm -rf ./**/*/.turbo && \
-    rm -rf ./**/*/*.md && \
-    node-prune && \
-    sh -c "rm -rf $(pnpm store path)"
+WORKDIR /app/${APP_FOLDER}/${APP}
+RUN pnpm run prisma:generate && pnpm run build
 
 ################################
-# Final image
-FROM shared AS runner
+# Production dependencies of the app only: `deploy` installs them into a folder of their own, so neither the
+# dependencies of the workspace root (commit and lint tooling) nor the dev dependencies of the app come along
+FROM base AS prod-deps
+
 ARG APP
-ARG PORT=3001
+
+COPY --from=pruner /app/out/json/ ./
+
+# pnpm adds the dependencies of the workspace root to every install, and the root lists tooling only (commit hooks,
+# lint, turbo). The root is not part of what runs, so they are dropped; the versions still come from the lockfile.
+RUN npm pkg delete dependencies
+
+# The peers of Prisma Studio (React) are missing on purpose: the studio is never started
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm --filter "@lukasbriza/${APP}" --config.strict-peer-dependencies=false deploy --prod --ignore-scripts /prod
+
+# The one install script that is needed: the one of `@prisma/engines` downloads the schema engine (migrations). Run
+# directly, because `pnpm rebuild <package>` does nothing after a deploy without scripts and a plain `pnpm rebuild`
+# also runs the `postinstall` of the app, which needs the schema.
+RUN <<'EOF'
+set -e
+cd /prod
+node -e '
+const path = require("node:path")
+const prisma = path.dirname(require.resolve("prisma/package.json"))
+const engines = path.dirname(require.resolve("@prisma/engines/package.json", { paths: [prisma] }))
+require("node:child_process").execFileSync(process.execPath, ["scripts/postinstall.js"], { cwd: engines, stdio: "inherit" })
+'
+EOF
+
+################################
+# Runtime: compiled code, production dependencies, the schema and migrations
+FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS runtime
+
+ARG APP
 ARG APP_FOLDER=apps
+ARG PORT=3000
 
-ENV PORT=${PORT}
-ENV HOSTNAME="0.0.0.0"
-ENV TZ=Europe/Prague
+ENV NODE_ENV=production \
+    PORT=${PORT}
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nodejs
-USER nodejs
+WORKDIR /app/${APP_FOLDER}/${APP}
 
-WORKDIR /application
-COPY --from=builder --chown=nodejs:nodejs /application .
+# Read-only for the user the server runs as
+COPY --from=prod-deps /prod/node_modules ./node_modules
+COPY --from=build /app/${APP_FOLDER}/${APP}/build ./build
+COPY --from=pruner /app/out/full/${APP_FOLDER}/${APP}/package.json /app/out/full/${APP_FOLDER}/${APP}/prisma.config.ts ./
+COPY --from=pruner /app/out/full/${APP_FOLDER}/${APP}/prisma ./prisma
 
-WORKDIR /application/${APP_FOLDER}/${APP}
-# Optionaly will need to tun prisma migrate command in compose "command" key,
-# to ensure, that DB is always actual.
-CMD sh -c "pnpm start -p ${PORT}"
+USER node
+
+EXPOSE ${PORT}
+
+# Node is the one tool the image is certain to have; `/api/health` answers 503 when the database does not
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD ["node", "-e", "fetch(`http://127.0.0.1:${process.env.PORT}/api/health`, { signal: AbortSignal.timeout(4000) }).then((response) => process.exit(response.ok ? 0 : 1), () => process.exit(1))"]
+
+# Node itself is the main process, so it receives SIGTERM
+CMD ["node", "build/main"]

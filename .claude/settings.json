@@ -1,5 +1,6 @@
 {
   "includeCoAuthoredBy": false,
+  "outputStyle": "Quick Scan",
   "hooks": {
     "PreToolUse": [
       {
