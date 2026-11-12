@@ -1,6 +1,6 @@
 # Triggers an ArgoCD sync for mcp-servers when a deploy tag (mcp-servers-v*) is pushed.
 # The chart points at upstream images directly (see
-# apps/mcp-servers/*/server.yaml), so there is no image to build and the tag
+# apps/mcp-servers/k8s/chart/servers/*.yaml), so there is no image to build and the tag
 # carries no version; it is purely the "deploy now" signal. The Application's
 # automated sync is intentionally off (see
 # infrastructure/argocd/k8s/applications/mcp-servers.yaml in

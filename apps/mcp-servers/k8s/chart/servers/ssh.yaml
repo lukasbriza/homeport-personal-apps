@@ -1,0 +1,30 @@
+# Config of the SSH MCP server (own source in apps/mcp-servers/ssh, image built by
+# .github/workflows/mcp-ssh-build-push.yml). The file name is the URL path
+# segment: https://<host>/ssh/mcp.
+#
+# Stays disabled until the image exists and both Infisical secrets are set: an enabled
+# server without its token stops the gateway from starting, which takes the other
+# servers down with it.
+enabled: false
+image:
+  repository: ghcr.io/lukasbriza/mcp-ssh
+  tag: mcp-ssh-v0.1.0
+port: 9600
+# Infisical key holding this server's bearer token. Min. 32 chars, only [A-Za-z0-9_-]
+# (e.g. `openssl rand -hex 32`). The gateway refuses to start otherwise.
+tokenKey: MCP_SSH_TOKEN
+# Container env var -> Infisical key. SSH_HOSTS is one JSON object holding every host
+# and its private key: {"<alias>": {"host", "port", "username", "privateKey",
+# "hostKeySha256"}}. The server refuses to start on an invalid value.
+secretEnv:
+  SSH_HOSTS: MCP_SSH_HOSTS
+env:
+  MCP_PORT: "9600"
+  MCP_ALLOWED_HOSTS: "{{ .Values.host }}"
+resources:
+  requests:
+    cpu: 25m
+    memory: 96Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
