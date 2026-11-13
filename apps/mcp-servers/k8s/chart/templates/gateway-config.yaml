@@ -11,6 +11,18 @@ data:
     }
 
     :{{ .Values.gateway.port }} {
+      # Access log of every request, including the ones rejected here with 401/404 that never reach a
+      # server. The token header is removed from the log.
+      log {
+        output stdout
+        format filter {
+          wrap json
+          fields {
+            request>headers>X-Auth-Token delete
+          }
+        }
+      }
+
       handle /healthz {
         respond "ok" 200
       }

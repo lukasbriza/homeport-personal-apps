@@ -1,5 +1,5 @@
 /**
- * Request log: one JSON line per HTTP request, written when the connection closes.
+ * Request log: one JSON line when an HTTP request arrives and one when its connection closes.
  *
  * Headers and bodies are not logged (they can hold tokens and commands). Only what is needed to see
  * how an MCP client talks to the server: which route, which JSON-RPC method, which protocol version,
@@ -19,6 +19,15 @@ const getRpcMethod = (body: unknown): string | undefined => {
 
 export const logRequests = (req: Request, res: Response, next: NextFunction) => {
   const startedAt = Date.now()
+  // Logged on arrival too (before the body is parsed, so only headers): a request that never finishes
+  // (e.g. an open stream) would otherwise leave no trace.
+  logInfo({
+    msg: 'request-start',
+    method: req.method,
+    path: req.path,
+    mcpMethod: req.get('mcp-method'),
+    protocol: req.get('mcp-protocol-version'),
+  })
   res.on('close', () => {
     logInfo({
       msg: 'request',

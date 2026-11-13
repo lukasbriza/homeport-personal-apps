@@ -1,6 +1,6 @@
 {
   "name": "mcp-ssh-server",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "MCP server that runs commands on a fixed list of SSH hosts",
   "type": "module",
@@ -20,12 +20,12 @@
     "zod": "^4.2.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0",
     "@types/express": "5.0.6",
     "@types/node": "22.19.0",
     "@types/ssh2": "1.15.6",
     "tsx": "4.23.15",
-    "typescript": "5.9.3",
-    "@modelcontextprotocol/client": "2.4.0"
+    "typescript": "5.9.3"
   },
   "packageManager": "pnpm@10.28.0"
 }

@@ -13,5 +13,7 @@ import { logError } from '../../utils/log.js'
 
 export const createMcpHttpHandler = (createServer: () => McpServer): McpHttpHandler =>
   createMcpHandler(() => createServer(), {
-    onerror: (error) => logError({ error: String(error) }),
+    onerror: (error) => {
+      logError({ error: String(error) })
+    },
   })

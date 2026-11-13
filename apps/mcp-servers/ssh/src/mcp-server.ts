@@ -20,7 +20,7 @@ import { toErrorResult, toTextResult } from './utils/tool-result.js'
 
 const MAX_OUTPUT_BYTES = 64 * 1024 // per stream (stdout, stderr)
 const DEFAULT_TIMEOUT_S = 30
-const MAX_TIMEOUT_S = 300
+const MAX_TIMEOUT_S = 200 // Claude cuts a tool call off after 240 s
 const MAX_COMMAND_LENGTH = 8000
 const MAX_AUDIT_COMMAND_LENGTH = 500 // the audit log keeps only the start of a command
 
@@ -60,7 +60,7 @@ const shortenCommand = (command: string) => command.slice(0, MAX_AUDIT_COMMAND_L
 
 /** Creates the MCP server with all SSH tools. The MCP handler (routes/mcp/post.ts) creates one per HTTP request. */
 export const createMcpServer = (hosts: Hosts, sessions: SessionStore): McpServer => {
-  const server = new McpServer({ name: 'mcp-ssh-server', version: '0.2.0' })
+  const server = new McpServer({ name: 'mcp-ssh-server', version: '0.2.1' })
   const aliases = Object.keys(hosts).toSorted()
   const hostInput = z.string().describe(`Host alias. One of: ${aliases.join(', ')}.`)
 
