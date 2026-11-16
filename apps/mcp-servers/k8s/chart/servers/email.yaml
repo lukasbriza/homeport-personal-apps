@@ -22,8 +22,8 @@ secretEnv:
   MCP_EMAIL_SERVER_PASSWORD: MCP_EMAIL_PASSWORD
 # Non-secret env. MCP_HOST/MCP_PORT/MCP_ALLOWED_* are this server's transport settings;
 # Host/Origin validation stays on and allows only the public hostname. SMTP host is
-# deliberately absent (sending unavailable) and the mutation grants are empty (no flag
-# changes, moves, deletes, saves).
+# deliberately absent (sending unavailable) and only the `organize` mutation class is
+# granted (flags, moves, mailbox creation); delete, send, append and draft stay off.
 env:
   MCP_HOST: "0.0.0.0"
   MCP_PORT: "9557"
@@ -32,7 +32,7 @@ env:
   MCP_EMAIL_SERVER_ACCOUNT_NAME: seznam
   MCP_EMAIL_SERVER_IMAP_HOST: imap.seznam.cz
   MCP_EMAIL_SERVER_IMAP_PORT: "993"
-  MCP_EMAIL_SERVER_ACCOUNT_ALLOWED_MUTATIONS: ""
+  MCP_EMAIL_SERVER_ACCOUNT_ALLOWED_MUTATIONS: "organize"
   MCP_EMAIL_SERVER_ALLOWED_RECIPIENTS: ""
   MCP_EMAIL_SERVER_ENABLE_ATTACHMENT_DOWNLOAD: "false"
   MCP_EMAIL_SERVER_ENABLE_ATTACHMENT_CONTENT: "false"
