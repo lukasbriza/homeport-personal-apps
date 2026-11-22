@@ -6,16 +6,12 @@
  *
  * A new route is a new file plus one line in `registerRoutes`.
  */
-import type { McpHttpHandler } from '@modelcontextprotocol/server'
 import type { Express } from 'express'
+
+import type { RouteContext } from '../types.js'
 
 import { handleGetMcp } from './mcp/get.js'
 import { createPostMcpHandler } from './mcp/post.js'
-
-/** What route handlers need from the rest of the app. */
-export type RouteContext = {
-  mcpHandler: McpHttpHandler
-}
 
 export const registerRoutes = (app: Express, context: RouteContext) => {
   app.post('/mcp', createPostMcpHandler(context.mcpHandler))

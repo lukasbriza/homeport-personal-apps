@@ -1,0 +1,33 @@
+# Config of the Donetick MCP server (own source in apps/mcp-servers/donetick, image built by
+# .github/workflows/mcp-donetick-build-push.yml). The file name is the URL path
+# segment: https://<host>/donetick/mcp.
+#
+# Stays disabled until the image exists and both Infisical secrets are set: an enabled
+# server without its token stops the gateway from starting, which takes the other
+# servers down with it.
+enabled: true
+image:
+  repository: ghcr.io/lukasbriza/mcp-donetick
+  tag: mcp-donetick-v0.1.0
+port: 9601
+# Infisical key holding this server's bearer token. Min. 32 chars, only [A-Za-z0-9_-]
+# (e.g. `openssl rand -hex 32`). The gateway refuses to start otherwise.
+tokenKey: MCP_DONETICK_GATEWAY_TOKEN
+# Container env var -> Infisical key. DONETICK_TOKEN is a Donetick API token (eAPI),
+# created in Donetick for this server alone, so it can be revoked on its own.
+secretEnv:
+  DONETICK_TOKEN: MCP_DONETICK_API_TOKEN
+env:
+  MCP_PORT: "9601"
+  MCP_ALLOWED_HOSTS: "{{ .Values.host }}"
+  # Donetick is scaled to zero by KEDA. The interceptor behind this service wakes the pod
+  # and holds the request until it is up; it routes by the Host header, so that is set too.
+  DONETICK_BASE_URL: "http://donetick-keda-proxy.donetick.svc.cluster.local:8080"
+  DONETICK_HOST_HEADER: donetick.lukasbriza.eu
+resources:
+  requests:
+    cpu: 25m
+    memory: 96Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

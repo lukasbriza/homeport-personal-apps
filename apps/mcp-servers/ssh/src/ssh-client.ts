@@ -1,38 +1,16 @@
 /**
- * Low-level SSH client: connect to one host and run one command on it.
+ * SSH client: connect to one host and run one command on it. Low-level helpers (fingerprint, output buffer) are in
+ * utils/ssh.ts.
  *
  * Used in two ways:
  *   - `ssh_exec` tool: connect, run one command, disconnect (`runCommandOnce`),
  *   - session store: keep the connection open and run many commands (`connectToHost` + `runCommand`).
  */
-import { createHash } from 'node:crypto'
-
 import { Client } from 'ssh2'
 
-import type { HostConfig } from './config.js'
-
-const CONNECT_TIMEOUT_MS = 15_000
-const KEEPALIVE_INTERVAL_MS = 20_000
-
-/** Limits for one command. */
-export type RunOptions = {
-  timeoutMs: number // the command is stopped after this
-  maxBytes: number // stdout and stderr are each cut off after this many bytes
-}
-
-/** What one command produced. */
-export type RunResult = {
-  stdout: string
-  stderr: string
-  exitCode: number | null // null when the command was stopped by a signal
-  signal: string | null
-  isTimedOut: boolean
-  isTruncated: boolean // stdout or stderr hit `maxBytes`
-}
-
-/** Host key fingerprint in the format `ssh-keygen -lf` prints: "SHA256:" + base64 without padding. */
-const getFingerprint = (hostKey: Buffer) =>
-  `SHA256:${createHash('sha256').update(hostKey).digest('base64').replace(/=+$/, '')}`
+import { CONNECT_TIMEOUT_MS, KEEPALIVE_INTERVAL_MS } from './constants.js'
+import type { HostConfig, RunOptions, RunResult } from './types.js'
+import { createOutputCollector, getFingerprint } from './utils/ssh.js'
 
 /** Opens an authenticated connection. Fails when the host key does not match `hostKeySha256`. */
 export const connectToHost = (hostConfig: HostConfig): Promise<Client> =>
@@ -62,28 +40,6 @@ export const connectToHost = (hostConfig: HostConfig): Promise<Client> =>
         hostVerifier: (hostKey: Buffer) => getFingerprint(hostKey) === hostConfig.hostKeySha256,
       })
   })
-
-/** Collects one output stream (stdout or stderr) up to `maxBytes`; anything beyond is dropped. */
-const createOutputCollector = (maxBytes: number) => {
-  const chunks: Buffer[] = []
-  let size = 0
-  let isTruncated = false
-
-  const add = (data: Buffer) => {
-    const room = maxBytes - size
-    if (data.length > room) isTruncated = true
-    if (room <= 0) return
-    const kept = data.subarray(0, room)
-    chunks.push(kept)
-    size += kept.length
-  }
-
-  return {
-    add,
-    getText: () => Buffer.concat(chunks).toString('utf8'),
-    isTruncated: () => isTruncated,
-  }
-}
 
 /**
  * Runs one command on an open connection and waits until it ends.

@@ -1,56 +1,15 @@
 /**
  * Session store: keeps SSH connections open between tool calls (`ssh_open` / `ssh_run` / `ssh_close`).
  *
- * A session remembers its working directory, so a `cd` in one `ssh_run` call still applies in the
- * next one. Sessions live in this process's memory, so the server must run as a single replica.
+ * A session remembers its working directory, so a `cd` in one `ssh_run` call still applies in the next one (how:
+ * utils/shell.ts). Sessions live in this process's memory, so the server must run as a single replica.
  */
 import { randomBytes } from 'node:crypto'
 
-import type { Client } from 'ssh2'
-
-import type { HostConfig } from './config.js'
-import { connectToHost, runCommand, type RunOptions, type RunResult } from './ssh-client.js'
-
-const IDLE_TIMEOUT_MS = 15 * 60_000 // a session unused for this long is closed
-const CLEANUP_INTERVAL_MS = 60_000
-const MAX_SESSIONS = 5
-
-type Session = {
-  hostAlias: string
-  client: Client
-  cwd: string | null // null until a command reports its directory (the user's home)
-  lastUsedAt: number
-}
-
-export type SessionRunResult = RunResult & Pick<Session, 'hostAlias' | 'cwd'>
-
-/** Wraps a value in single quotes for `sh`, escaping single quotes inside it. */
-const quoteForShell = (value: string) => `'${value.replaceAll("'", String.raw`'\''`)}'`
-
-/**
- * Every command runs in a new SSH channel, i.e. a fresh shell that forgets any earlier `cd`.
- * So we wrap the command into a script that:
- *   1. enters the remembered directory (exit code 98 if it no longer exists),
- *   2. runs the command,
- *   3. prints a marker line "<marker><exit code>:<directory>" telling us where the command ended up.
- * If the command calls `exit`, step 3 is skipped: the exit code still arrives over SSH and the
- * remembered directory stays as it was.
- */
-const wrapCommand = (command: string, cwd: string | null, marker: string) => {
-  const enterCwd = cwd ? `cd ${quoteForShell(cwd)} || exit 98\n` : ''
-  const script = `(\n${enterCwd}${command}\n__rc=$?; printf '\\n${marker}%s:%s\\n' "$__rc" "$PWD"; exit $__rc\n)`
-  return `sh -c ${quoteForShell(script)}`
-}
-
-/** Finds the marker line from `wrapCommand`, reads the new directory and removes the line from stdout. */
-const extractMarker = (stdout: string, marker: string) => {
-  const markerAt = stdout.lastIndexOf(`\n${marker}`)
-  if (markerAt === -1) return { stdout, cwd: undefined }
-
-  const markerLine = stdout.slice(markerAt + 1 + marker.length) // "<exit code>:<directory>"
-  const match = /^(\d+):(.*)$/m.exec(markerLine)
-  return { stdout: stdout.slice(0, markerAt), cwd: match?.[2] }
-}
+import { CLEANUP_INTERVAL_MS, IDLE_TIMEOUT_MS, MAX_SESSIONS } from './constants.js'
+import { connectToHost, runCommand } from './ssh-client.js'
+import type { HostConfig, RunOptions, Session, SessionRunResult } from './types.js'
+import { extractMarker, wrapCommand } from './utils/shell.js'
 
 /** Creates the in-memory session store. Call `closeAll` on shutdown. */
 export const createSessionStore = () => {
@@ -116,5 +75,3 @@ export const createSessionStore = () => {
 
   return { open, run, close, closeAll }
 }
-
-export type SessionStore = ReturnType<typeof createSessionStore>

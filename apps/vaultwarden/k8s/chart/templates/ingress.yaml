@@ -9,8 +9,20 @@ spec:
   tls:
     - hosts: [{{ .Values.ingress.host | quote }}]
       secretName: {{ .Release.Name }}-tls
+    - hosts: [{{ printf "www.%s" .Values.ingress.host | quote }}]
+      secretName: {{ .Release.Name }}-www-tls
   rules:
     - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}
+                port:
+                  number: {{ .Values.service.port }}
+    - host: {{ printf "www.%s" .Values.ingress.host | quote }}
       http:
         paths:
           - path: /
