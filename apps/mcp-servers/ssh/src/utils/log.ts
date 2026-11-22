@@ -1,8 +1,7 @@
 /**
  * Logging: one JSON object per line with a timestamp, so the cluster's log collection can parse it.
  */
-
-type LogEntry = Record<string, unknown>
+import type { LogEntry } from '../types.js'
 
 const toLine = (entry: LogEntry) => JSON.stringify({ ts: new Date().toISOString(), ...entry })
 

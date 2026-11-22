@@ -14,7 +14,7 @@ spec:
   # A rule without `paths` only matches the literal root ("/"), not the app as
   # a whole — the explicit "/" prefix below is required to cover every path.
   rules:
-    - hosts: [{{ .Values.ingress.host | quote }}]
+    - hosts: [{{ .Values.ingress.host | quote }}, {{ printf "www.%s" .Values.ingress.host | quote }}]
       paths:
         - value: /
   scalingMetric:

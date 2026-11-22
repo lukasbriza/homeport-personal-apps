@@ -10,23 +10,37 @@ list of SSH hosts. It speaks MCP over Streamable HTTP at `/mcp` and is deployed 
 AI client --HTTPS--> gateway (checks X-Auth-Token) --> POST /mcp --> MCP tool --SSH--> host
 ```
 
-1. `main.ts` reads the config, starts an Express app and registers the routes from `routes/`.
-2. `routes/mcp/post.ts` handles `POST /mcp`: every request gets a fresh MCP server (stateless MCP).
-3. `mcp-server.ts` defines the tools. A tool takes a host **alias** and looks it up in `SSH_HOSTS`.
-4. `ssh_exec` connects, runs one command and disconnects (`ssh-client.ts`).
-5. `ssh_open` / `ssh_run` / `ssh_close` keep the connection in the session store
-   (`session-store.ts`), which also remembers the working directory.
+A tool takes a host **alias** (a key of `SSH_HOSTS`), never an address. `ssh_exec` connects, runs one command and
+disconnects; `ssh_open` / `ssh_run` / `ssh_close` keep the connection in the session store, which also remembers the
+working directory.
 
-| File                   | What it does                                                                        |
-| ---------------------- | ----------------------------------------------------------------------------------- |
-| `src/main.ts`          | Entry point: env config, Express app, startup and shutdown                          |
-| `src/routes/`          | HTTP routes, one file per route: folder = URL, file = method (`routes/mcp/post.ts`) |
-| `src/utils/`           | General helpers: JSON logging, JSON-RPC error responses, MCP tool results           |
-| `src/config.ts`        | Parses and validates `SSH_HOSTS`                                                    |
-| `src/mcp-server.ts`    | Tool definitions, output formatting, audit log                                      |
-| `src/ssh-client.ts`    | Connects to a host (with host key check), runs one command with a timeout and a cap |
-| `src/session-store.ts` | Keeps connections open between calls, remembers `cd`, closes idle sessions          |
-| `test/ssh.test.ts`     | End-to-end test with a fake in-process SSH server                                   |
+## Code layout
+
+A request goes: AI client → gateway (checks the token) → `POST /mcp` → MCP handler → one tool → SSH → host.
+
+| Path                   | What is there                                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------ |
+| `src/main.ts`          | Entry point: reads the config, sets up Express, starts listening, shuts down cleanly.      |
+| `src/routes/`          | HTTP routes, folder = URL, file = method: `mcp/post.ts` (MCP requests), `mcp/get.ts`.      |
+| `src/mcp-server.ts`    | List of tools (with what each does over SSH) and the MCP handler that runs them.           |
+| `src/tools/`           | One file per tool: what the AI client sees and the handler.                                |
+| `src/tools/shared/`    | Code used by several tools: host lookup (`hosts.ts`), command result (`commands.ts`).      |
+| `src/ssh-client.ts`    | Connects to a host (host key check), runs one command. Helpers in `src/utils/ssh.ts`.      |
+| `src/session-store.ts` | Keeps connections between calls, remembers `cd` (`src/utils/shell.ts`), closes idle.       |
+| `src/config.ts`        | Parses `SSH_HOSTS` at startup.                                                             |
+| `src/validations.ts`   | All zod schemas: `SSH_HOSTS`, tool inputs.                                                 |
+| `src/types.ts`         | All TypeScript types; the validated ones are inferred from `validations.ts`.               |
+| `src/constants.ts`     | Limits, timeouts and defaults.                                                             |
+| `src/utils/`           | Helpers: logging, request log, errors, tool answers (`run-tool.ts`), SSH, shell, JSON-RPC. |
+| `test/ssh.test.ts`     | End-to-end test with a fake in-process SSH server.                                         |
+
+Where to change what:
+
+- **New tool:** copy a file in `src/tools/`, add its input schema to `src/validations.ts` and one line to
+  `createMcpServer` in `src/mcp-server.ts`.
+- **What the AI client reads about a tool:** `description` in the tool's file, `.describe()` of its inputs in
+  `src/validations.ts`.
+- **Limits and timeouts** (output cap, command timeout, session count and idle time): `src/constants.ts`.
 
 ### How a session remembers `cd`
 
@@ -44,7 +58,7 @@ new directory from that line and removes it from the output. Environment variabl
 | `ssh_open` / `ssh_run` / `ssh_close` | Session handle (`ssh_...`) that keeps the working directory. Env vars do not persist. 15 min idle TTL, 5 sessions max, in memory (single replica). |
 
 No TTY: `vim`, `top` and password prompts do not work. Output is capped at 64 kB per stream,
-timeout 1–300 s (default 30). Every call writes one JSON audit line to stdout.
+timeout 1–200 s (default 30). Every call writes one JSON audit line to stdout.
 
 ## Configuration
 

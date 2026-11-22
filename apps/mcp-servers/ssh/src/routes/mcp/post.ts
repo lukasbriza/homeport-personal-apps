@@ -1,7 +1,7 @@
 /**
  * POST /mcp: one MCP request (discover, list tools, call a tool, ...).
  *
- * The SDK handler does the protocol work; this adapts Express to it. `req.body` is already parsed
+ * The MCP handler (mcp-server.ts) does the protocol work and runs the tools; this adapts Express to it. `req.body` is already parsed
  * by express.json(), so it is passed along instead of letting the handler read the stream again.
  */
 import { toNodeHandler } from '@modelcontextprotocol/node'

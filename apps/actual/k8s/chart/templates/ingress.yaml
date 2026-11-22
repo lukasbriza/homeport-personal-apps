@@ -9,6 +9,8 @@ spec:
   tls:
     - hosts: [{{ .Values.ingress.host | quote }}]
       secretName: {{ .Release.Name }}-tls
+    - hosts: [{{ printf "www.%s" .Values.ingress.host | quote }}]
+      secretName: {{ .Release.Name }}-www-tls
   rules:
     - host: {{ .Values.ingress.host | quote }}
       http:
@@ -23,6 +25,22 @@ spec:
                 # It holds the request, wakes the app via the
                 # InterceptorRoute/ScaledObject pair in scaletozero.yaml, then
                 # forwards it once the pod is ready.
+                name: {{ .Release.Name }}-keda-proxy
+                port:
+                  number: 8080
+                {{- else }}
+                name: {{ .Release.Name }}
+                port:
+                  number: {{ .Values.service.port }}
+                {{- end }}
+    - host: {{ printf "www.%s" .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                {{- if .Values.scaleToZero.enabled }}
                 name: {{ .Release.Name }}-keda-proxy
                 port:
                   number: 8080

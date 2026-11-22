@@ -1,12 +1,15 @@
 /**
- * Entry point of the SSH MCP server.
+ * Entry point of the SSH MCP server: reads the config, sets up Express, starts listening.
  *
- * Request flow:
- *   AI client -> gateway (checks the token, see the mcp-servers chart) -> POST /mcp (routes/)
- *   -> MCP handler (SDK v2) -> MCP tools (mcp-server.ts) -> SSH (ssh-client.ts, session-store.ts) -> host
+ * Request flow (files in brackets):
+ *   AI client -> gateway (checks the token, see the mcp-servers chart)
+ *   -> POST /mcp (routes/mcp/post.ts) -> MCP handler (mcp-server.ts) -> one tool (tools/<tool>.ts)
+ *   -> SSH (ssh-client.ts, session-store.ts) -> host
+ *
+ * The code map is in README.md ("Code layout").
  *
  * Configuration (env vars):
- *   SSH_HOSTS          JSON list of hosts, see config.ts
+ *   SSH_HOSTS          JSON object with the hosts, see config.ts
  *   MCP_ALLOWED_HOSTS  comma-separated hostnames accepted in the Host header (the public hostname)
  *   MCP_PORT           HTTP port, default 9600
  */
@@ -14,9 +17,9 @@ import { hostHeaderValidation } from '@modelcontextprotocol/express'
 import express from 'express'
 
 import { parseHosts } from './config.js'
-import { createMcpServer } from './mcp-server.js'
+import { DEFAULT_PORT, JSON_BODY_LIMIT } from './constants.js'
+import { createMcpHttpHandler } from './mcp-server.js'
 import { registerRoutes } from './routes/index.js'
-import { createMcpHttpHandler } from './routes/mcp/handler.js'
 import { createSessionStore } from './session-store.js'
 import { logInfo } from './utils/log.js'
 import { logRequests } from './utils/request-log.js'
@@ -24,7 +27,7 @@ import { logRequests } from './utils/request-log.js'
 // ---- 1. Configuration: fail at startup when something is missing ----
 
 const hosts = parseHosts(process.env.SSH_HOSTS)
-const port = Number(process.env.MCP_PORT ?? 9600)
+const port = Number(process.env.MCP_PORT ?? DEFAULT_PORT)
 const allowedHosts = (process.env.MCP_ALLOWED_HOSTS ?? '')
   .split(',')
   .map((host) => host.trim())
@@ -42,10 +45,11 @@ app.disable('x-powered-by')
 app.use(logRequests)
 // Rejects requests whose Host header is not in MCP_ALLOWED_HOSTS (protects against DNS rebinding).
 app.use(hostHeaderValidation(allowedHosts))
-app.use(express.json({ limit: '1mb' }))
+app.use(express.json({ limit: JSON_BODY_LIMIT }))
 
+// The MCP handler answers MCP requests with the tools (mcp-server.ts); the routes hand requests to it.
+const mcpHandler = createMcpHttpHandler({ hosts, sessions })
 // Every route is a file in routes/ (folder = URL, file = HTTP method); see routes/index.ts.
-const mcpHandler = createMcpHttpHandler(() => createMcpServer(hosts, sessions))
 registerRoutes(app, { mcpHandler })
 
 // ---- 3. Start and shutdown ----
