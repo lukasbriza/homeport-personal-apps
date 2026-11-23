@@ -61,8 +61,12 @@ Found by probing a running instance, there is no public reference:
 
 ## KEDA
 
-In the cluster Donetick is scaled to zero. `DONETICK_BASE_URL` points at the KEDA interceptor service, which starts
-the pod and holds the request until it is ready (the first call can take up to a minute; the client waits 60 s).
+In the cluster Donetick is scaled to zero. `DONETICK_BASE_URL` points at the KEDA interceptor service. While Donetick
+sleeps, the interceptor answers at once with `503` and a small HTML "starting" page, starts the pod and forwards
+nothing. The client therefore repeats any request (POST and PUT too: nothing reached Donetick) every 3 s, at most 20
+times (about a minute; the pod needs ~15 s), and then answers "Donetick is still starting up". The limits are
+`RETRY_DELAY_MS` and `MAX_WAKE_UP_ATTEMPTS` in `src/constants.ts`.
+
 The interceptor routes by the `Host` header, which `fetch` cannot override, so the client uses `node:http`.
 
 ## Configuration (env vars)

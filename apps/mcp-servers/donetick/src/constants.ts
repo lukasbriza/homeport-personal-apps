@@ -14,13 +14,19 @@ export const JSON_RPC_SERVER_ERROR = -32_000
 
 // ---- Donetick eAPI client ----
 
-/** Generous: behind the KEDA interceptor a scaled-to-zero Donetick needs up to a minute to start. */
+/** Max wait for one answer. Generous: right after start-up Donetick can be slow. */
 export const REQUEST_TIMEOUT_MS = 60_000
-export const RETRY_DELAY_MS = 3000
 export const MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 /** Max characters of a Donetick error answer quoted in an error message. */
 export const MAX_ERROR_TEXT = 200
-/** Only GET is retried, once, on these statuses and connection errors. */
+/** Pause before every retry (connection error, Donetick starting up, gateway error). */
+export const RETRY_DELAY_MS = 3000
+/**
+ * Max requests while the KEDA interceptor reports Donetick as starting up: 20 × 3 s ≈ 1 min, the pod needs ~15 s.
+ * Must stay well under the 240 s after which Claude cancels a tool call.
+ */
+export const MAX_WAKE_UP_ATTEMPTS = 20
+/** Only GET is retried, once, on these statuses (with a JSON body) and connection errors. */
 export const RETRYABLE_STATUS = new Set([502, 503, 504])
 export const RETRYABLE_ERRORS = new Set(['ECONNRESET', 'ECONNREFUSED'])
 

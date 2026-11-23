@@ -73,6 +73,9 @@ const members = [
 type Seen = { method: string; url: string; host: string | undefined; body: unknown }
 const seen: Seen[] = []
 let failMembersOnce = true // first GET of the members answers 503, to check the retry of GET
+// Like the KEDA interceptor while Donetick sleeps: the next `asleepFor` requests get 503 and an HTML page, unforwarded.
+let asleepFor = 0
+const STARTING_PAGE = '<!doctype html><html><head><meta http-equiv="refresh" content="3"></head>Starting…</html>'
 
 const sendJson = (res: ServerResponse, status: number, body: unknown) => {
   res.writeHead(status, { 'content-type': 'application/json' })
@@ -112,6 +115,18 @@ const fakeDonetick = createServer((req, res) => {
     const method = req.method ?? ''
     seen.push({ method, url, host: req.headers.host, body: raw ? JSON.parse(raw) : undefined })
 
+    if (asleepFor > 0) {
+      asleepFor -= 1
+      res.writeHead(503, { 'content-type': 'text/html' })
+      res.end(STARTING_PAGE)
+      return
+    }
+    if (url === '/eapi/v1/bad-gateway') {
+      // like a failing proxy in front of Donetick: an HTML error page
+      res.writeHead(502, { 'content-type': 'text/html' })
+      res.end('<html><body>Bad Gateway</body></html>')
+      return
+    }
     if (!url.startsWith('/eapi/v1/')) {
       // like the real web app: every other path is its index.html with status 200
       res.writeHead(200, { 'content-type': 'text/html' })
@@ -342,12 +357,35 @@ try {
   const allLogs = [...good.logs, ...bad.logs].join('')
   assert.ok(!allLogs.includes(TOKEN) && !allLogs.includes('wrong-token'), 'tokens must not appear in logs')
 
-  // A path the eAPI does not have: the web app's HTML is reported as such
-  // (reached through the client directly: no tool calls an unknown path)
+  // Client checks, through the client directly (no tool calls these paths) and with short retry pauses
   const { createDonetickClient } = await import('../src/donetick-client.js')
-  const client = createDonetickClient({ baseUrl: `http://127.0.0.1:${fakePort}`, token: TOKEN })
+  const client = createDonetickClient(
+    { baseUrl: `http://127.0.0.1:${fakePort}`, token: TOKEN },
+    { delayMs: 10, maxWakeUpAttempts: 4 },
+  )
+  const countCalls = (method: string, url: string) =>
+    seen.filter((call) => call.method === method && call.url === url).length
+
+  // A path the eAPI does not have: the web app's HTML is reported as such
   await assert.rejects(client.call('GET', '/eapi/v1/nope-not-here'), /Donetick answered 404: not found/)
   await assert.rejects(client.call('GET', '/other'), /HTML page/)
+
+  // An HTML error page from a proxy names its status, not a missing route
+  await assert.rejects(client.call('GET', '/eapi/v1/bad-gateway'), /Donetick answered 502 with an HTML page/)
+
+  // Donetick asleep: the "starting" page is retried for every method, POST too, until Donetick answers
+  asleepFor = 2
+  const postsBefore = countCalls('POST', '/eapi/v1/chore')
+  const woken = (await client.call('POST', '/eapi/v1/chore', { name: 'After a nap' })) as { id: number }
+  assert.equal(woken.id, 99)
+  assert.equal(countCalls('POST', '/eapi/v1/chore') - postsBefore, 3, '2 bounced by the interceptor, then 1 real')
+
+  // Still asleep after the last attempt: a clear error instead of the HTML message
+  asleepFor = 100
+  const asleepPutsBefore = countCalls('PUT', '/eapi/v1/chore/1')
+  await assert.rejects(client.call('PUT', '/eapi/v1/chore/1', { name: 'x' }), /Donetick is still starting up/)
+  assert.equal(countCalls('PUT', '/eapi/v1/chore/1') - asleepPutsBefore, 4, 'at most maxWakeUpAttempts requests')
+  asleepFor = 0
 
   // HTTP: unknown Host header is refused
   assert.equal(await getStatusForHost('evil.example'), 403, 'unknown Host header must be refused')

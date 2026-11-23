@@ -37,6 +37,12 @@ export type DonetickClient = {
 /** An HTTP answer before parsing: status and body text. */
 export type RawResponse = { status: number; text: string }
 
+/** Retry timing of the client. Defaults in constants.ts; the test passes shorter values. */
+export type RetryOptions = {
+  delayMs: number
+  maxWakeUpAttempts: number
+}
+
 // ---- HTTP routes ----
 
 /** What route handlers need from the rest of the app. */
