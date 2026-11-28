@@ -1,8 +1,9 @@
 /**
  * End-to-end test, no real Donetick needed:
- *   1. start a fake Donetick eAPI in this process (token check, the routes the tools use, the web app's HTML fallback),
- *   2. start the real MCP server (src/main.ts) as a child process, pointed at the fake eAPI,
- *   3. call every tool through a real MCP client and check the answers and what the fake eAPI received.
+ *   1. start a fake Donetick in this process: token check, the eAPI and main-API routes the tools use (the edit route
+ *      stores exactly what it gets, like the real one), the web app's HTML fallback,
+ *   2. start the real MCP server (src/main.ts) as a child process, pointed at the fake Donetick,
+ *   3. call every tool through a real MCP client and check the answers and what the fake Donetick received.
  * Run with `pnpm test`.
  */
 import assert from 'node:assert/strict'
@@ -16,14 +17,37 @@ const WRONG_TOKEN_MCP_PORT = 9613
 const TOKEN = 'test-token-0123456789abcdef'
 const HOST_HEADER = 'donetick.test'
 
-// ---- 1. Fake Donetick eAPI ----
+// ---- 1. Fake Donetick ----
 
-const chores = [
+type FakeSubtask = {
+  id: number
+  name: string
+  orderId: number
+  completedAt: string | null
+  completedBy: number
+  parentId: number | null
+}
+type FakeChore = Record<string, unknown> & {
+  id: number
+  updatedAt?: string
+  subTasks?: FakeSubtask[] | undefined
+  labelsV2?: { id: number; name: string }[]
+}
+
+const UPDATED_AT = '2026-11-20T10:00:00Z'
+const labels = [
+  { id: 1, name: 'Health' },
+  { id: 2, name: 'Gifts' },
+  { id: 3, name: 'Renovation' },
+  { id: 4, name: 'Work' },
+]
+const chores: FakeChore[] = [
   {
     id: 1,
     name: 'Pay VAT',
     description: '<p>Monthly <b>VAT</b> return</p>',
     frequencyType: 'monthly',
+    assignStrategy: 'keep_last_assigned',
     frequency: 1,
     nextDueDate: '2026-11-24T21:59:59Z',
     priority: 1,
@@ -32,11 +56,23 @@ const chores = [
     isActive: true,
     labelsV2: [{ id: 4, name: 'Work' }],
     syncVersion: 74,
+    subTasks: [
+      { id: 12, name: 'Submit the form', orderId: 1, completedAt: null, completedBy: 0, parentId: 11 },
+      {
+        id: 11,
+        name: 'Collect invoices',
+        orderId: 0,
+        completedAt: '2026-11-20T10:00:00Z',
+        completedBy: 1,
+        parentId: null,
+      },
+    ],
   },
   {
     id: 2,
     name: 'Cook meals',
     frequencyType: 'interval',
+    assignStrategy: 'keep_last_assigned',
     frequency: 20,
     frequencyMetadata: { unit: 'days' },
     nextDueDate: '2026-11-29T17:00:00Z',
@@ -50,17 +86,20 @@ const chores = [
     id: 3,
     name: 'Check windows',
     frequencyType: 'once',
+    assignStrategy: 'keep_last_assigned',
     frequency: 1,
     nextDueDate: null,
     priority: 1,
     assignedTo: 1,
     isActive: true,
     labelsV2: [{ id: 3, name: 'Renovation' }],
+    thingChore: { thingId: 7 }, // linked to a Donetick "thing": the edit route would drop the link
   },
   {
     id: 4,
     name: 'Old archived chore',
     frequencyType: 'once',
+    assignStrategy: 'keep_last_assigned',
     nextDueDate: '2026-10-01T00:00:00Z',
     isActive: false,
     labelsV2: [],
@@ -77,12 +116,111 @@ let failMembersOnce = true // first GET of the members answers 503, to check the
 let asleepFor = 0
 const STARTING_PAGE = '<!doctype html><html><head><meta http-equiv="refresh" content="3"></head>Starting…</html>'
 
+/** The fields of Donetick's edit route (`ChoreReq`): a saved chore holds exactly these, everything else is cleared. */
+const CHORE_REQ_KEYS = [
+  'name',
+  'frequencyType',
+  'frequency',
+  'frequencyMetadata',
+  'nextDueDate',
+  'isRolling',
+  'assignedTo',
+  'assignees',
+  'assignStrategy',
+  'isActive',
+  'notification',
+  'notificationMetadata',
+  'priority',
+  'completionWindow',
+  'points',
+  'description',
+  'requireApproval',
+  'isPrivate',
+  'projectId',
+]
+let nextChoreId = 99
+let nextSubtaskId = 100
+
+/**
+ * Like Donetick's create and edit routes: required fields checked, label ids turned into labels, new subtasks (id 0)
+ * get ids, omitted subtasks stay. Returns the stored chore, or the error text of a 400.
+ */
+const toStoredChore = (body: Record<string, unknown>, id: number, old?: FakeChore): FakeChore | string => {
+  const isMissing = ['name', 'frequencyType', 'assignStrategy'].some((key) => typeof body[key] !== 'string')
+  if (isMissing) return 'Invalid request: name, frequencyType and assignStrategy are required'
+  // the real edit route dereferences labelsV2 without a nil check
+  if (old && !Array.isArray(body.labelsV2)) return 'runtime error: nil pointer dereference'
+
+  const stored: FakeChore = {
+    id,
+    updatedAt: new Date().toISOString(),
+    ...Object.fromEntries(CHORE_REQ_KEYS.filter((key) => key in body).map((key) => [key, body[key]])),
+  }
+  const labelIds = (body.labelsV2 as { id: number }[] | undefined) ?? []
+  stored.labelsV2 = labelIds.map(
+    (label) => labels.find((known) => known.id === label.id) ?? { id: label.id, name: '?' },
+  )
+  stored.subTasks = Array.isArray(body.subTasks)
+    ? (body.subTasks as (Omit<FakeSubtask, 'parentId'> & { parentId?: number | null })[]).map((subtask) =>
+        subtask.id > 0
+          ? { ...subtask, parentId: subtask.parentId ?? null }
+          : {
+              ...subtask,
+              id: (nextSubtaskId += 1) - 1,
+              completedAt: null,
+              completedBy: 0,
+              parentId: subtask.parentId ?? null,
+            },
+      )
+    : old?.subTasks
+  return stored
+}
+
+/** Donetick's main API (/api/v1): one chore, the whole-chore edit, create, and checking a subtask off. */
+const answerMainApi = (method: string, pathname: string, raw: string): [number, unknown] | undefined => {
+  const choreRoute = /^\/api\/v1\/chores\/(\d+)$/.exec(pathname)
+  if (method === 'GET' && choreRoute) {
+    const chore = chores.find((candidate) => candidate.id === Number(choreRoute[1]))
+    if (!chore) return [500, { error: 'Failed to retrieve chore' }]
+    return [200, { res: { updatedAt: UPDATED_AT, assignees: [], ...chore } }]
+  }
+  if (method === 'PUT' && pathname === '/api/v1/chores/') {
+    const body = JSON.parse(raw) as Record<string, unknown>
+    const index = chores.findIndex((candidate) => candidate.id === body.id)
+    const old = chores[index]
+    if (!old) return [500, { error: 'Error getting chore' }]
+    if (body.updatedAt !== (old.updatedAt ?? UPDATED_AT)) {
+      return [403, { error: 'You cannot edit this chore: chore has been modified by another user' }]
+    }
+    const stored = toStoredChore(body, old.id, old)
+    if (typeof stored === 'string') return [400, { error: stored }]
+    chores[index] = stored
+    return [200, { message: 'Chore updated successfully' }]
+  }
+  if (method === 'POST' && pathname === '/api/v1/chores/') {
+    const stored = toStoredChore(JSON.parse(raw) as Record<string, unknown>, nextChoreId)
+    if (typeof stored === 'string') return [400, { error: stored }]
+    nextChoreId += 1
+    chores.push(stored)
+    return [200, { res: stored.id }]
+  }
+  const subtaskRoute = /^\/api\/v1\/chores\/(\d+)\/subtask$/.exec(pathname)
+  if (method === 'PUT' && subtaskRoute) {
+    const { id, completedAt } = JSON.parse(raw) as { id: number; completedAt: string | null }
+    const chore = chores.find((candidate) => candidate.id === Number(subtaskRoute[1]))
+    const subtask = chore?.subTasks?.find((candidate) => candidate.id === id)
+    if (subtask) subtask.completedAt = completedAt
+    return [200, {}] // like Donetick: 200 with an empty object, also for an unknown subtask
+  }
+  return undefined
+}
+
 const sendJson = (res: ServerResponse, status: number, body: unknown) => {
   res.writeHead(status, { 'content-type': 'application/json' })
   res.end(JSON.stringify(body))
 }
 
-/** The fake eAPI's answer to one request: status and JSON body. */
+/** The fake Donetick's answer to one API request: status and JSON body. */
 const answerEapi = (
   method: string,
   url: string,
@@ -92,7 +230,14 @@ const answerEapi = (
   if (key === undefined) return [401, { error: 'API token required' }]
   if (key !== TOKEN) return [401, { error: 'Invalid API token' }]
 
-  if (method === 'GET' && url === '/eapi/v1/chore') return [200, chores]
+  const { pathname, searchParams } = new URL(url, 'http://fake')
+  if (method === 'GET' && pathname === '/eapi/v1/chore') {
+    // like Donetick: subtasks only with the flag
+    if (searchParams.get('includeSubtasks') === 'true') return [200, chores]
+    return [200, chores.map(({ subTasks: _subTasks, ...chore }) => chore)]
+  }
+  const mainApiAnswer = answerMainApi(method, pathname, raw)
+  if (mainApiAnswer) return mainApiAnswer
   if (method === 'GET' && url === '/eapi/v1/circle/members') {
     if (failMembersOnce) {
       failMembersOnce = false
@@ -101,7 +246,6 @@ const answerEapi = (
     return [200, members]
   }
   if (method === 'POST' && url === '/eapi/v1/chore') return [200, { id: 99, ...JSON.parse(raw) }]
-  if (method === 'PUT' && /^\/eapi\/v1\/chore\/\d+$/.test(url)) return [200, JSON.parse(raw)]
   if (method === 'POST' && /^\/eapi\/v1\/chore\/\d+\/complete$/.test(url)) return [200, { id: 1, ok: true }]
   return [404, { error: 'not found' }]
 }
@@ -127,7 +271,7 @@ const fakeDonetick = createServer((req, res) => {
       res.end('<html><body>Bad Gateway</body></html>')
       return
     }
-    if (!url.startsWith('/eapi/v1/')) {
+    if (!url.startsWith('/eapi/v1/') && !url.startsWith('/api/v1/')) {
       // like the real web app: every other path is its index.html with status 200
       res.writeHead(200, { 'content-type': 'text/html' })
       res.end('<!doctype html><html></html>')
@@ -234,10 +378,12 @@ try {
   const { tools } = await good.mcp.listTools()
   assert.deepEqual(tools.map((tool) => tool.name).toSorted(), [
     'complete_chore',
+    'complete_subtask',
     'create_chore',
     'list_chores',
     'list_members',
     'update_chore',
+    'update_subtasks',
   ])
 
   // list_chores: active only, earliest due date first, no due date last, HTML stripped, noise fields dropped
@@ -256,9 +402,14 @@ try {
     dueDate: '2026-11-24T21:59:59Z',
     priority: 1,
     points: 1,
-    labels: ['Work'],
+    labels: [{ id: 4, name: 'Work' }],
     assignedTo: 1,
     isActive: true,
+    // in Donetick's order (orderId), nested ones with their parent
+    subtasks: [
+      { id: 11, name: 'Collect invoices', done: true },
+      { id: 12, name: 'Submit the form', done: false, parentId: 11 },
+    ],
   })
   assert.match(JSON.stringify(active), /every 20 days/)
   assert.doesNotMatch(JSON.stringify(active), /syncVersion/)
@@ -293,22 +444,37 @@ try {
     'GET retried once',
   )
 
-  // create_chore: body in eAPI field names; the answer is a summary
+  // create_chore: main API (the eAPI's create would drop most fields); the answer is the stored chore
   const created = await callJson('create_chore', {
     name: 'Buy gifts',
     due_date: '2026-12-01',
     priority: 2,
+    points: 3,
     assigned_to: 1,
     label_ids: [2],
+    subtasks: ['List people', 'Order online'],
   })
-  assert.equal(created.id, 99)
-  assert.equal(created.name, 'Buy gifts')
-  const createCall = seen.findLast((call) => call.method === 'POST' && call.url === '/eapi/v1/chore')
+  assert.deepEqual(created, {
+    id: 99,
+    name: 'Buy gifts',
+    schedule: 'once',
+    dueDate: '2026-12-01T23:59:59Z',
+    priority: 2,
+    points: 3,
+    labels: [{ id: 2, name: 'Gifts' }],
+    assignedTo: 1,
+    isActive: true,
+    subtasks: [
+      { id: 100, name: 'List people', done: false },
+      { id: 101, name: 'Order online', done: false },
+    ],
+  })
+  const createCall = seen.findLast((call) => call.method === 'POST' && call.url === '/api/v1/chores/')
   assert.deepEqual(createCall?.body, {
     name: 'Buy gifts',
-    dueDate: '2026-12-01',
-    nextDueDate: '2026-12-01',
+    nextDueDate: '2026-12-01T23:59:59Z',
     priority: 2,
+    points: 3,
     assignedTo: 1,
     assignees: [{ userId: 1 }],
     labelsV2: [{ id: 2 }],
@@ -316,22 +482,34 @@ try {
     frequency: 1,
     assignStrategy: 'keep_last_assigned',
     isActive: true,
+    subTasks: [
+      { id: 0, name: 'List people', orderId: 0 },
+      { id: 0, name: 'Order online', orderId: 1 },
+    ],
   })
 
-  // update_chore: sends the whole chore with the change applied, other fields stay
-  const updated = await callJson('update_chore', { chore_id: 1, priority: 3 })
+  // update_chore: the whole chore goes back with the change applied, so every other field survives the edit route
+  const updated = await callJson('update_chore', { chore_id: 1, priority: 3, label_ids: [4, 1] })
   assert.equal(updated.priority, 3)
-  const updateCall = seen.findLast((call) => call.method === 'PUT')
-  assert.equal(updateCall?.url, '/eapi/v1/chore/1')
-  const updateBody = updateCall.body as { priority: number; name: string; syncVersion: number }
-  assert.equal(updateBody.priority, 3)
-  assert.equal(updateBody.name, 'Pay VAT')
-  assert.equal(updateBody.syncVersion, 74)
+  assert.deepEqual(updated.labels, [
+    { id: 4, name: 'Work' },
+    { id: 1, name: 'Health' },
+  ])
+  assert.equal(updated.description, 'Monthly VAT return', 'unchanged fields survive')
+  assert.equal(updated.points, 1, 'unchanged fields survive')
+  assert.equal((updated.subtasks as unknown[]).length, 2, 'subtasks survive')
+  const updateCall = seen.findLast((call) => call.method === 'PUT' && call.url === '/api/v1/chores/')
+  assert.equal((updateCall?.body as { updatedAt?: unknown }).updatedAt, UPDATED_AT, 'updatedAt goes back for the check')
+  const archived = await callJson('update_chore', { chore_id: 2, is_active: false })
+  assert.equal(archived.isActive, false, 'is_active: false archives')
+
   const putsBefore = seen.filter((call) => call.method === 'PUT').length
   const noChange = await callTool(good.mcp, 'update_chore', { chore_id: 1 })
   assert.ok(noChange.isError, 'no field to change must be refused')
   const unknownChore = await callTool(good.mcp, 'update_chore', { chore_id: 404, name: 'x' })
-  assert.ok(unknownChore.isError, 'unknown chore must be refused')
+  assert.match(unknownChore.text, /chore 404 does not exist/)
+  const linked = await callTool(good.mcp, 'update_chore', { chore_id: 3, name: 'x' })
+  assert.match(linked.text, /linked to a Donetick thing/, 'a thing link would be dropped, so the edit is refused')
   assert.equal(seen.filter((call) => call.method === 'PUT').length, putsBefore, 'refused updates send nothing')
 
   // complete_chore: POST, no body without a note, never retried
@@ -342,6 +520,58 @@ try {
   assert.equal(completeCall.body, undefined)
   await callJson('complete_chore', { chore_id: 2, note: 'done at last' })
   assert.deepEqual(seen.findLast((call) => call.url === '/eapi/v1/chore/2/complete')?.body, { note: 'done at last' })
+
+  // complete_subtask: checks off and unchecks one subtask; unknown ids are refused before anything is sent
+  const checked = await callJson('complete_subtask', { chore_id: 1, subtask_id: 12 })
+  assert.deepEqual(checked, { choreId: 1, subtaskId: 12, name: 'Submit the form', done: true })
+  const subtaskCall = seen.findLast((call) => call.url === '/api/v1/chores/1/subtask')
+  assert.equal(subtaskCall?.method, 'PUT')
+  const subtaskBody = subtaskCall.body as { id: number; choreId: number; completedAt: string | null }
+  assert.equal(subtaskBody.id, 12)
+  assert.equal(subtaskBody.choreId, 1)
+  assert.ok(subtaskBody.completedAt && !Number.isNaN(Date.parse(subtaskBody.completedAt)), 'completedAt is a timestamp')
+  const afterCheck = await callJson('list_chores', { search: 'vat' })
+  assert.match(JSON.stringify(afterCheck), /"id":12,"name":"Submit the form","done":true/)
+  await callJson('complete_subtask', { chore_id: 1, subtask_id: 12, done: false })
+  const uncheckCall = seen.findLast((call) => call.url === '/api/v1/chores/1/subtask')
+  assert.deepEqual(uncheckCall?.body, { id: 12, choreId: 1, completedAt: null }, 'done: false sends completedAt null')
+  const subtaskCallsBefore = seen.filter((call) => call.url.endsWith('/subtask')).length
+  const unknownSubtask = await callTool(good.mcp, 'complete_subtask', { chore_id: 1, subtask_id: 999 })
+  assert.ok(unknownSubtask.isError, 'an unknown subtask must be refused')
+  assert.equal(seen.filter((call) => call.url.endsWith('/subtask')).length, subtaskCallsBefore, 'refused: nothing sent')
+
+  // update_subtasks: add (also nested), rename; done state and the other fields of the chore survive
+  const edited = await callJson('update_subtasks', {
+    chore_id: 1,
+    add: [{ name: 'Pay', parent_id: 11 }, { name: 'File the receipt' }],
+    rename: [{ subtask_id: 11, name: 'Collect all invoices' }],
+  })
+  assert.deepEqual(edited.subtasks, [
+    { id: 11, name: 'Collect all invoices', done: true },
+    { id: 12, name: 'Submit the form', done: false, parentId: 11 },
+    { id: 102, name: 'Pay', done: false, parentId: 11 },
+    { id: 103, name: 'File the receipt', done: false },
+  ])
+  // remove: nested subtasks go with their parent
+  const pruned = await callJson('update_subtasks', { chore_id: 1, remove: [11] })
+  assert.deepEqual(pruned.removed, [11, 12, 102])
+  assert.deepEqual(pruned.subtasks, [{ id: 103, name: 'File the receipt', done: false }])
+  const afterEdits = await callJson('list_chores', { search: 'vat' })
+  assert.match(JSON.stringify(afterEdits), /"description":"Monthly VAT return".*"priority":3/, 'chore fields survive')
+
+  const editsBefore = seen.filter((call) => call.method === 'PUT' && call.url === '/api/v1/chores/').length
+  const unknownEdit = await callTool(good.mcp, 'update_subtasks', { chore_id: 1, remove: [999] })
+  assert.match(unknownEdit.text, /has no subtask 999/)
+  const conflictingEdit = await callTool(good.mcp, 'update_subtasks', {
+    chore_id: 1,
+    remove: [103],
+    rename: [{ subtask_id: 103, name: 'x' }],
+  })
+  assert.match(conflictingEdit.text, /is being deleted/)
+  const emptyEdit = await callTool(good.mcp, 'update_subtasks', { chore_id: 1 })
+  assert.ok(emptyEdit.isError, 'nothing to change must be refused')
+  const editsAfter = seen.filter((call) => call.method === 'PUT' && call.url === '/api/v1/chores/').length
+  assert.equal(editsAfter, editsBefore, 'refused edits send nothing')
 
   // Input validation: ids are numbers, so nothing can inject a path
   const injected = await callTool(good.mcp, 'complete_chore', { chore_id: '2/../../x' })
