@@ -1,16 +1,16 @@
 /**
- * update_chore: changes the given fields of a chore; `is_active: false` archives it.
+ * update_chore: changes the given fields of a chore; `is_active: false` archives it. Subtasks: update_subtasks.
  *
- * Donetick: GET /eapi/v1/chore, then PUT /eapi/v1/chore/{id}. The eAPI replaces the whole chore, so the current one
- * is read first and sent back with the changes applied.
+ * Donetick: GET /api/v1/chores/{id}, PUT /api/v1/chores/ (the whole chore with the changes applied: the edit route
+ * clears every field left out), then GET again for the answer. See tools/shared/chores.ts for why the main API.
  */
 import type { McpServer } from '@modelcontextprotocol/server'
 
-import type { UpdateChoreInput, DonetickClient } from '../types.js'
+import type { DonetickClient, UpdateChoreInput } from '../types.js'
 import { runTool } from '../utils/run-tool.js'
 import { UpdateChoreInputSchema } from '../validations.js'
 
-import { fetchChores, summarizeWriteResult, toChoreChanges } from './shared/chores.js'
+import { fetchFullChore, saveFullChore, summarizeChore, toChoreChanges } from './shared/chores.js'
 
 export const registerUpdateChore = (server: McpServer, client: DonetickClient) => {
   const handleUpdateChore = (input: UpdateChoreInput) =>
@@ -21,11 +21,9 @@ export const registerUpdateChore = (server: McpServer, client: DonetickClient) =
       }
       if (Object.keys(changes).length === 0) throw new Error('nothing to change: set at least one field')
 
-      const allChores = await fetchChores(client)
-      const current = allChores.find((chore) => chore.id === input.chore_id)
-      if (!current) throw new Error(`chore ${input.chore_id} does not exist`)
-      const path = `/eapi/v1/chore/${input.chore_id}`
-      return summarizeWriteResult(await client.call('PUT', path, { ...current, ...changes }))
+      const current = await fetchFullChore(client, input.chore_id)
+      await saveFullChore(client, current, changes)
+      return summarizeChore(await fetchFullChore(client, input.chore_id))
     })
 
   server.registerTool(
@@ -33,8 +31,9 @@ export const registerUpdateChore = (server: McpServer, client: DonetickClient) =
     {
       title: 'Update a chore',
       description:
-        'Changes fields of an existing chore; fields that are not given stay as they are. ' +
-        'Use `is_active: false` to archive a chore. There is no delete tool.',
+        'Changes fields of an existing chore; fields that are not given stay as they are. `label_ids` replaces ' +
+        'all labels. Use `is_active: false` to archive a chore. Subtasks are changed with update_subtasks. ' +
+        'There is no delete tool.',
       inputSchema: UpdateChoreInputSchema,
       annotations: { destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },

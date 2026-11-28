@@ -36,3 +36,5 @@ export const MAX_RESULT_CHARS = 100_000 // far below the ~150k characters Claude
 export const MAX_DESCRIPTION_CHARS = 300
 export const DEFAULT_LIST_LIMIT = 50
 export const MAX_LIST_LIMIT = 200
+/** Per chore. Donetick stores the subtask order in an int8 (max 127). */
+export const MAX_SUBTASKS = 100
